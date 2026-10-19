@@ -1,0 +1,2539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Interactive ASCII Portrait</title>
+  <script>
+    const pageParams = new URLSearchParams(location.search);
+    if (pageParams.get('embed') === '1') {
+      document.documentElement.classList.add('embed-mode');
+    }
+    if (pageParams.get('transparent') === '1') {
+      document.documentElement.classList.add('transparent-mode');
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020302;
+      --ink: #efffdf;
+      --muted: rgba(239, 255, 223, 0.54);
+      --faint: rgba(239, 255, 223, 0.32);
+      --line: rgba(239, 255, 223, 0.14);
+      --line-strong: rgba(239, 255, 223, 0.27);
+      --panel: rgba(7, 10, 7, 0.84);
+      --panel-solid: #090d09;
+      --field: rgba(239, 255, 223, 0.055);
+      --field-hover: rgba(185, 255, 125, 0.1);
+      --accent: #c6ff91;
+      --accent-dark: #101a0b;
+      --panel-width: 336px;
+      --workspace-rail: 372px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(163, 255, 91, 0.07), transparent 38%),
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: auto, 100% 4px;
+      mix-blend-mode: screen;
+    }
+
+    .transparent-mode,
+    .transparent-mode body {
+      background: transparent;
+    }
+
+    .transparent-mode body::before {
+      display: none;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: block;
+    }
+
+    #portrait { z-index: 0; }
+    #warpCanvas {
+      z-index: 1;
+      pointer-events: none;
+    }
+    #motionCanvas {
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .embed-mode .topbar,
+    .embed-mode .control-panel,
+    .embed-mode .intro,
+    .embed-mode .status,
+    .embed-mode .hint {
+      display: none !important;
+    }
+
+    .embed-mode canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      right: var(--workspace-rail);
+      z-index: 7;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      pointer-events: none;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 42px;
+      padding: 0 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(4, 6, 4, 0.58);
+      backdrop-filter: blur(18px) saturate(1.15);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.18);
+    }
+
+    .brand-signal {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 16px rgba(198, 255, 145, 0.68);
+    }
+
+    .brand {
+      margin: 0;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(239, 255, 223, 0.78);
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 3px;
+      color: var(--faint);
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.13em;
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      pointer-events: auto;
+    }
+
+    button,
+    .file-label {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(7, 10, 7, 0.76);
+      color: var(--ink);
+      min-height: 42px;
+      padding: 0 14px;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      cursor: pointer;
+      backdrop-filter: blur(18px) saturate(1.15);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover,
+    .file-label:hover {
+      border-color: var(--line-strong);
+      background: rgba(27, 39, 21, 0.9);
+      transform: translateY(-1px);
+    }
+
+    button:focus-visible,
+    .file-label:has(+ input:focus-visible) {
+      outline: 2px solid rgba(198, 255, 145, 0.72);
+      outline-offset: 3px;
+    }
+
+    .button-primary {
+      border-color: rgba(198, 255, 145, 0.42);
+      background: var(--accent);
+      color: var(--accent-dark);
+      box-shadow: 0 12px 34px rgba(104, 154, 65, 0.12);
+    }
+
+    .button-primary:hover {
+      border-color: var(--accent);
+      background: #d5ffad;
+    }
+
+    input[type="file"] {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .control-panel {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      width: var(--panel-width);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      backdrop-filter: blur(28px) saturate(1.2);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42), inset 0 1px rgba(255, 255, 255, 0.025);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 68px;
+      padding: 14px 14px 14px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-kicker,
+    .group-kicker {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--faint);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .panel-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+    }
+
+    .panel-live::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(198, 255, 145, 0.55);
+    }
+
+    .panel-scroll {
+      flex: 1;
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(239, 255, 223, 0.18) transparent;
+    }
+
+    .control-group {
+      padding: 19px 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .control-group:last-child { border-bottom: 0; }
+
+    .group-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 13px;
+    }
+
+    .group-heading h3 {
+      margin: 0;
+      color: rgba(239, 255, 223, 0.88);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+    }
+
+    .group-heading span {
+      color: var(--faint);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 9px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .control-item {
+      min-width: 0;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: var(--field);
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .control-item:hover {
+      border-color: var(--line);
+      background: var(--field-hover);
+    }
+
+    .select-control {
+      position: relative;
+      display: grid;
+      gap: 7px;
+      padding: 10px 11px 9px;
+    }
+
+    .select-control > span,
+    .control-head > span {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .select-control::after {
+      content: "⌄";
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      color: var(--faint);
+      pointer-events: none;
+    }
+
+    .select-control select {
+      width: 100%;
+      min-width: 0;
+      appearance: none;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      padding: 0 18px 0 0;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.35;
+      cursor: pointer;
+    }
+
+    .select-control select option {
+      background: var(--panel-solid);
+      color: var(--ink);
+    }
+
+    .select-control:focus-within {
+      border-color: rgba(198, 255, 145, 0.48);
+      background: rgba(185, 255, 125, 0.09);
+    }
+
+    .select-control:has(select:disabled) { opacity: 0.42; }
+
+    .slider-control {
+      display: grid;
+      gap: 9px;
+      padding: 10px 11px 11px;
+    }
+
+    .control-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .slider-control output {
+      min-width: 4ch;
+      color: rgba(239, 255, 223, 0.82);
+      font-size: 10px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .slider-control input[type="range"] {
+      width: 100%;
+      height: 12px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: ew-resize;
+    }
+
+    .slider-control input[type="range"]::-webkit-slider-runnable-track {
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(239, 255, 223, 0.2);
+    }
+
+    .slider-control input[type="range"]::-webkit-slider-thumb {
+      width: 13px;
+      height: 13px;
+      margin-top: -5.5px;
+      appearance: none;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      background: #182311;
+      box-shadow: 0 0 0 3px rgba(198, 255, 145, 0.08), 0 0 12px rgba(198, 255, 145, 0.18);
+    }
+
+    .slider-control input[type="range"]::-moz-range-track {
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(239, 255, 223, 0.2);
+    }
+
+    .slider-control input[type="range"]::-moz-range-thumb {
+      width: 13px;
+      height: 13px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      background: #182311;
+    }
+
+    .slider-control input[type="range"]:focus-visible {
+      outline: 1px solid rgba(198, 255, 145, 0.68);
+      outline-offset: 4px;
+      border-radius: 999px;
+    }
+
+    .intro {
+      position: fixed;
+      inset: 0 var(--workspace-rail) 0 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      pointer-events: none;
+      transition: opacity 500ms ease, visibility 500ms ease;
+    }
+
+    .intro.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .intro-card {
+      width: min(520px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 34px;
+      text-align: center;
+      background: var(--panel);
+      backdrop-filter: blur(22px);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.35);
+      pointer-events: auto;
+    }
+
+    .intro h1 {
+      margin: 0 0 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: clamp(30px, 7vw, 58px);
+      font-weight: 500;
+      line-height: 0.98;
+      letter-spacing: -0.045em;
+    }
+
+    .intro p {
+      margin: 0 auto 24px;
+      max-width: 40ch;
+      color: var(--muted);
+      font: 14px/1.7 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .drop-target {
+      display: block;
+      border: 1px dashed rgba(236, 255, 207, 0.36);
+      border-radius: 14px;
+      padding: 18px;
+      color: var(--ink);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+
+    .drop-target:hover, .drop-target.is-over {
+      background: rgba(177, 255, 112, 0.08);
+      border-color: rgba(236, 255, 207, 0.8);
+    }
+
+    .status {
+      position: fixed;
+      left: 22px;
+      bottom: 18px;
+      z-index: 4;
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .hint {
+      position: fixed;
+      right: 374px;
+      bottom: 18px;
+      z-index: 4;
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .processor {
+      position: fixed;
+      inset: 0;
+      z-index: 12;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(5, 7, 5, 0.88);
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 320ms ease, visibility 320ms ease;
+    }
+
+    .processor.is-active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .processor-card {
+      width: min(540px, 100%);
+    }
+
+    .processor-meta,
+    .processor-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.4;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .processor-visual {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: min(58vh, 500px);
+      margin: 13px 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(184, 255, 125, 0.07), transparent 54%),
+        #050705;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+    }
+
+    .loader-ascii {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: rgba(227, 255, 205, 0.84);
+      font: 500 clamp(7px, 1.15vw, 10px)/0.92 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.03em;
+      text-align: center;
+      white-space: pre;
+      transform: scaleX(0.92);
+      filter: drop-shadow(0 0 8px rgba(178, 255, 115, 0.08));
+    }
+
+    .loader-ascii span {
+      display: block;
+      min-height: 0.92em;
+      opacity: 0.22;
+      animation: resolve-row 1.55s ease-in-out infinite alternate;
+      animation-delay: calc(var(--row) * 34ms - 900ms);
+    }
+
+    .loader-scan {
+      position: absolute;
+      z-index: 2;
+      left: 7%;
+      right: 7%;
+      height: 2px;
+      top: 8%;
+      background: linear-gradient(90deg, transparent, rgba(220, 255, 190, 0.95), transparent);
+      box-shadow: 0 0 18px rgba(181, 255, 119, 0.65), 0 18px 42px rgba(181, 255, 119, 0.14);
+      animation: scan-portrait 2.1s cubic-bezier(.65, 0, .35, 1) infinite;
+    }
+
+    .loader-scan::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 90px;
+      transform: translateY(100%);
+      background: linear-gradient(rgba(181, 255, 119, 0.08), transparent);
+      pointer-events: none;
+    }
+
+    .processor-progress {
+      height: 1px;
+      margin-top: 12px;
+      overflow: hidden;
+      background: rgba(236, 255, 207, 0.12);
+    }
+
+    .processor-progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--ink);
+      box-shadow: 0 0 12px rgba(210, 255, 174, 0.55);
+      transition: width 520ms cubic-bezier(.22, 1, .36, 1);
+    }
+
+    @keyframes resolve-row {
+      0% { opacity: 0.18; filter: blur(0.45px); transform: translateX(-0.6px); }
+      55% { opacity: 0.86; filter: blur(0); }
+      100% { opacity: 0.38; filter: blur(0); transform: translateX(0.6px); }
+    }
+
+    @keyframes scan-portrait {
+      0% { top: 7%; opacity: 0; }
+      9% { opacity: 1; }
+      91% { opacity: 1; }
+      100% { top: 93%; opacity: 0; }
+    }
+
+    @media (min-width: 741px) and (max-width: 980px) {
+      .brand-block { display: none; }
+      .quick-actions { margin-left: auto; }
+    }
+
+    @media (max-width: 740px) {
+      .topbar {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+      }
+
+      .brand-block { display: none; }
+
+      .quick-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+
+      .quick-actions button,
+      .quick-actions .file-label {
+        min-height: 40px;
+        padding: 0 12px;
+      }
+
+      .control-panel {
+        top: auto;
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        width: auto;
+        height: min(44vh, 430px);
+        max-height: none;
+        border-radius: 17px;
+      }
+
+      .panel-header { min-height: 62px; }
+      .control-group { padding: 17px 15px 18px; }
+      .intro { inset: 0 0 calc(min(44vh, 430px) + 20px) 0; }
+      .status {
+        left: 14px;
+        bottom: calc(min(44vh, 430px) + 22px);
+      }
+      .hint { display: none; }
+      .intro-card { padding: 28px 21px 22px; }
+    }
+
+    @media (max-width: 430px) {
+      .quick-actions .file-label { font-size: 0; }
+      .quick-actions .file-label::after {
+        content: "照片";
+        font-size: 10px;
+      }
+      .button-primary { padding-inline: 11px; }
+      .control-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      button, .file-label, .intro { transition: none; }
+      .loader-ascii span, .loader-scan { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="portrait" aria-label="动态 ASCII 肖像"></canvas>
+  <canvas id="warpCanvas" aria-hidden="true"></canvas>
+  <canvas id="motionCanvas" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <div class="brand-block" aria-label="ASCII Portrait Studio">
+      <span class="brand-signal" aria-hidden="true"></span>
+      <p class="brand">ASCII Portrait <small>Luyuchen / Studio 2026</small></p>
+    </div>
+    <div class="quick-actions">
+      <label class="file-label" for="filePicker">更换照片</label>
+      <input id="filePicker" type="file" accept="image/*,.heic,.heif" />
+      <button class="button-primary" id="downloadButton" type="button">导出 PNG</button>
+      <button id="freezeAssetButton" type="button">冻结资产</button>
+    </div>
+  </header>
+
+  <aside class="control-panel" id="controlPanel" aria-label="肖像调节面板">
+    <div class="panel-header">
+      <div>
+        <span class="panel-kicker">Portrait controls</span>
+        <h2 class="panel-title">图像调节</h2>
+      </div>
+      <span class="panel-live">LIVE</span>
+    </div>
+
+    <div class="panel-scroll">
+      <section class="control-group" aria-labelledby="structureTitle">
+        <div class="group-heading">
+          <h3 id="structureTitle">字符结构</h3>
+          <span>STRUCTURE</span>
+        </div>
+        <div class="control-stack">
+          <label class="control-item slider-control" for="gridRange" title="向左更细密，向右更粗犷">
+            <span class="control-head"><span>网格尺寸</span><output id="gridValue" for="gridRange">8.0</output></span>
+            <input id="gridRange" type="range" min="5.5" max="13" step="0.25" value="8" aria-label="调整 ASCII 网格大小，左侧更细密，右侧更粗犷" />
+          </label>
+          <div class="control-grid">
+            <label class="control-item select-control" for="levelsSelect">
+              <span>字符层级</span>
+              <select id="levelsSelect" aria-label="选择字符层级">
+                <option value="0" selected>19 级</option>
+                <option value="1">27 级</option>
+              </select>
+            </label>
+            <label class="control-item select-control" for="warpSelect">
+              <span>形变强度</span>
+              <select id="warpSelect" aria-label="选择形变强度">
+                <option value="0">关闭</option>
+                <option value="1">轻微</option>
+                <option value="2" selected>明显</option>
+                <option value="3">超强</option>
+              </select>
+            </label>
+          </div>
+          <label class="control-item slider-control" for="contrastRange">
+            <span class="control-head"><span>对比度</span><output id="contrastValue" for="contrastRange">−12</output></span>
+            <input id="contrastRange" type="range" min="-40" max="60" step="1" value="-12" aria-label="调整 ASCII 肖像对比度" />
+          </label>
+        </div>
+      </section>
+
+      <section class="control-group" aria-labelledby="colorTitle">
+        <div class="group-heading">
+          <h3 id="colorTitle">颜色</h3>
+          <span>COLOR</span>
+        </div>
+        <div class="control-stack">
+          <label class="control-item select-control" for="colorSelect">
+            <span>色彩模式</span>
+            <select id="colorSelect" aria-label="选择色彩模式">
+              <option value="0" selected>原色</option>
+              <option value="1">黑白</option>
+              <option value="2">荧光绿</option>
+              <option value="3">琥珀橙</option>
+              <option value="4">钴蓝</option>
+            </select>
+          </label>
+          <div class="control-grid">
+            <label class="control-item slider-control" for="temperatureRange" title="向左偏冷，向右偏暖">
+              <span class="control-head"><span>色温</span><output id="temperatureValue" for="temperatureRange">0</output></span>
+              <input id="temperatureRange" type="range" min="-50" max="50" step="1" value="0" aria-label="调整色温，左侧偏冷，右侧偏暖" />
+            </label>
+            <label class="control-item slider-control" for="tintRange" title="向左偏绿，向右偏洋红">
+              <span class="control-head"><span>色调</span><output id="tintValue" for="tintRange">0</output></span>
+              <input id="tintRange" type="range" min="-50" max="50" step="1" value="0" aria-label="调整色调，左侧偏绿，右侧偏洋红" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-group" aria-labelledby="motionTitle">
+        <div class="group-heading">
+          <h3 id="motionTitle">动态</h3>
+          <span>MOTION</span>
+        </div>
+        <div class="control-stack">
+          <label class="control-item select-control" for="motionSelect">
+            <span>动画模式</span>
+            <select id="motionSelect" aria-label="选择动画模式">
+              <option value="0" selected>代码呼吸</option>
+              <option value="1">呼吸</option>
+              <option value="2">星点</option>
+              <option value="3">字符潮汐</option>
+              <option value="4">关闭</option>
+            </select>
+          </label>
+          <label class="control-item slider-control" for="motionStrengthRange" title="不改变基础字符，只调整动画幅度">
+            <span class="control-head"><span>动效强度</span><output id="motionStrengthValue" for="motionStrengthRange">82</output></span>
+            <input id="motionStrengthRange" type="range" min="0" max="100" step="1" value="82" aria-label="调整 ASCII 动效强度" />
+          </label>
+        </div>
+      </section>
+
+      <section class="control-group" aria-labelledby="sceneTitle">
+        <div class="group-heading">
+          <h3 id="sceneTitle">场景</h3>
+          <span>SCENE</span>
+        </div>
+        <label class="control-item select-control" for="backgroundSelect">
+          <span>背景模式</span>
+          <select id="backgroundSelect" aria-label="选择背景模式">
+            <option value="0" selected>艺术字符场</option>
+            <option value="1">纯黑</option>
+            <option value="2">原图</option>
+          </select>
+        </label>
+      </section>
+    </div>
+  </aside>
+
+  <section class="intro" id="intro">
+    <div class="intro-card">
+      <h1>ASCII, alive.</h1>
+      <p>选择或拖入你的肖像。照片会经过自动黑白场与局部对比分析，再转换为 19 或 27 级字符肖像。</p>
+      <label class="drop-target" id="dropTarget" for="heroFilePicker">
+        选择肖像照片或拖放到这里
+      </label>
+      <input id="heroFilePicker" type="file" accept="image/*,.heic,.heif" />
+    </div>
+  </section>
+
+  <p class="status" id="status">等待图像</p>
+  <p class="hint">固定网格字符 · 原色与四种单色可切换 · 代码波带、呼吸与星点自然流动</p>
+
+  <section class="processor" id="processor" aria-live="polite" aria-hidden="true">
+    <div class="processor-card">
+      <div class="processor-meta">
+        <span id="processorStage">准备图像</span>
+        <span id="processorPercent">00%</span>
+      </div>
+      <div class="processor-visual">
+        <pre class="loader-ascii" id="loaderAscii" aria-hidden="true"></pre>
+        <div class="loader-scan" aria-hidden="true"></div>
+      </div>
+      <div class="processor-foot">
+        <span>Local background separation</span>
+        <span id="levelLabel">ASCII / 19 levels</span>
+      </div>
+      <div class="processor-progress" aria-hidden="true"><span id="processorBar"></span></div>
+    </div>
+  </section>
+
+  <!-- Generated beside this file so the frozen asset also works from file:// offline. -->
+  <script src="./portrait-preset.js"></script>
+  <script>
+    (() => {
+      const embedMode = document.documentElement.classList.contains('embed-mode');
+      const transparentMode = document.documentElement.classList.contains('transparent-mode');
+      const embedParams = embedMode ? new URLSearchParams(location.search) : null;
+      let embedWidth = 729;
+      let embedHeight = 705;
+      const canvas = document.querySelector('#portrait');
+      const warpCanvas = document.querySelector('#warpCanvas');
+      const motionCanvas = document.querySelector('#motionCanvas');
+      const ctx = canvas.getContext('2d', { alpha: transparentMode });
+      const motionCtx = motionCanvas.getContext('2d');
+      const sampleCanvas = document.createElement('canvas');
+      const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+      const heightCanvas = document.createElement('canvas');
+      const heightCtx = heightCanvas.getContext('2d');
+      const staticCanvas = document.createElement('canvas');
+      const staticCtx = staticCanvas.getContext('2d', { alpha: transparentMode });
+      const glowCanvas = document.createElement('canvas');
+      const glowCtx = glowCanvas.getContext('2d');
+      const intro = document.querySelector('#intro');
+      const status = document.querySelector('#status');
+      const dropTarget = document.querySelector('#dropTarget');
+      const filePickers = [document.querySelector('#filePicker'), document.querySelector('#heroFilePicker')];
+      const gridRange = document.querySelector('#gridRange');
+      const gridValue = document.querySelector('#gridValue');
+      const levelsSelect = document.querySelector('#levelsSelect');
+      const colorSelect = document.querySelector('#colorSelect');
+      const contrastRange = document.querySelector('#contrastRange');
+      const contrastValue = document.querySelector('#contrastValue');
+      const temperatureRange = document.querySelector('#temperatureRange');
+      const temperatureValue = document.querySelector('#temperatureValue');
+      const tintRange = document.querySelector('#tintRange');
+      const tintValue = document.querySelector('#tintValue');
+      const warpSelect = document.querySelector('#warpSelect');
+      const motionSelect = document.querySelector('#motionSelect');
+      const motionStrengthRange = document.querySelector('#motionStrengthRange');
+      const motionStrengthValue = document.querySelector('#motionStrengthValue');
+      const backgroundSelect = document.querySelector('#backgroundSelect');
+      const downloadButton = document.querySelector('#downloadButton');
+      const freezeAssetButton = document.querySelector('#freezeAssetButton');
+      const controlPanel = document.querySelector('#controlPanel');
+      const processor = document.querySelector('#processor');
+      const processorStage = document.querySelector('#processorStage');
+      const processorPercent = document.querySelector('#processorPercent');
+      const processorBar = document.querySelector('#processorBar');
+      const loaderAscii = document.querySelector('#loaderAscii');
+      const levelLabel = document.querySelector('#levelLabel');
+      const inferenceCanvas = document.createElement('canvas');
+      const inferenceCtx = inferenceCanvas.getContext('2d', { willReadFrequently: true });
+      const loaderSampleCanvas = document.createElement('canvas');
+      const loaderSampleCtx = loaderSampleCanvas.getContext('2d', { willReadFrequently: true });
+
+      function clamp(value, minimum = 0, maximum = 1) {
+        return Math.max(minimum, Math.min(maximum, value));
+      }
+
+      function applyMidpointContrast(value, amount) {
+        const tone = clamp(value);
+        return tone < 0.5
+          ? 0.5 * Math.pow(tone * 2, amount)
+          : 1 - 0.5 * Math.pow((1 - tone) * 2, amount);
+      }
+
+      function formatSigned(value) {
+        if (value > 0) return `+${value}`;
+        if (value < 0) return `−${Math.abs(value)}`;
+        return '0';
+      }
+
+      function getGridMetrics() {
+        const cellX = state.gridSize;
+        return {
+          cellX,
+          cellY: cellX * 1.4,
+          fontSize: cellX * 1.4375
+        };
+      }
+
+      const portraitDatabaseName = 'ascii-portrait-local-v1';
+      const portraitStoreName = 'portraits';
+      const lastPortraitKey = 'last-portrait';
+      const assetPresetKey = 'frozen-asset-preset-v1';
+
+      function openPortraitDatabase() {
+        return new Promise((resolve, reject) => {
+          if (!('indexedDB' in window)) {
+            reject(new Error('IndexedDB is unavailable'));
+            return;
+          }
+          const request = indexedDB.open(portraitDatabaseName, 1);
+          request.onupgradeneeded = () => {
+            const database = request.result;
+            if (!database.objectStoreNames.contains(portraitStoreName)) {
+              database.createObjectStore(portraitStoreName);
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error('Could not open portrait storage'));
+        });
+      }
+
+      async function saveLastPortrait(file) {
+        const database = await openPortraitDatabase();
+        try {
+          await new Promise((resolve, reject) => {
+            const transaction = database.transaction(portraitStoreName, 'readwrite');
+            transaction.objectStore(portraitStoreName).put({
+              blob: file,
+              name: file.name || 'portrait',
+              type: file.type || '',
+              savedAt: Date.now()
+            }, lastPortraitKey);
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error || new Error('Could not save portrait'));
+            transaction.onabort = () => reject(transaction.error || new Error('Portrait save was aborted'));
+          });
+        } finally {
+          database.close();
+        }
+      }
+
+      async function loadLastPortrait() {
+        const database = await openPortraitDatabase();
+        try {
+          return await new Promise((resolve, reject) => {
+            const transaction = database.transaction(portraitStoreName, 'readonly');
+            const request = transaction.objectStore(portraitStoreName).get(lastPortraitKey);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error || new Error('Could not restore portrait'));
+          });
+        } finally {
+          database.close();
+        }
+      }
+
+      async function saveAssetPreset(preset) {
+        const database = await openPortraitDatabase();
+        try {
+          await new Promise((resolve, reject) => {
+            const transaction = database.transaction(portraitStoreName, 'readwrite');
+            transaction.objectStore(portraitStoreName).put(preset, assetPresetKey);
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error || new Error('Could not save asset preset'));
+            transaction.onabort = () => reject(transaction.error || new Error('Asset preset save was aborted'));
+          });
+        } finally {
+          database.close();
+        }
+      }
+
+      async function loadStoredAssetPreset() {
+        const database = await openPortraitDatabase();
+        try {
+          return await new Promise((resolve, reject) => {
+            const transaction = database.transaction(portraitStoreName, 'readonly');
+            const request = transaction.objectStore(portraitStoreName).get(assetPresetKey);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error || new Error('Could not restore asset preset'));
+          });
+        } finally {
+          database.close();
+        }
+      }
+
+      function createDisplacementRenderer(target) {
+        const gl = target.getContext('webgl2', {
+          alpha: transparentMode,
+          premultipliedAlpha: false,
+          antialias: false,
+          preserveDrawingBuffer: true,
+          powerPreference: 'high-performance'
+        });
+        if (!gl) {
+          target.style.display = 'none';
+          return null;
+        }
+
+        const vertexSource = [
+          '#version 300 es',
+          'in vec2 aPosition;',
+          'in vec2 aUv;',
+          'out vec2 vUv;',
+          'void main() {',
+          '  vUv = aUv;',
+          '  gl_Position = vec4(aPosition, 0.0, 1.0);',
+          '}'
+        ].join('\n');
+        const fragmentSource = [
+          '#version 300 es',
+          'precision highp float;',
+          'uniform sampler2D uAscii;',
+          'uniform sampler2D uHeight;',
+          'uniform vec2 uHeightTexel;',
+          'uniform vec2 uSourceTexel;',
+          'uniform float uCellAspect;',
+          'uniform float uStrength;',
+          'uniform float uMotionMode;',
+          'uniform float uMotionStrength;',
+          'uniform float uColorMode;',
+          'uniform vec2 uGrid;',
+          'uniform float uTime;',
+          'in vec2 vUv;',
+          'out vec4 outColor;',
+          'float heightAt(vec2 uv) {',
+          '  return texture(uHeight, clamp(uv, 0.0, 1.0)).r;',
+          '}',
+          'float cellNoise(vec2 cell) {',
+          '  return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453123);',
+          '}',
+          'vec3 monochromeTone(float luma, float mode) {',
+          '  float envelope = pow(max(0.0, sin(3.14159265 * clamp(luma, 0.0, 1.0))), 0.72);',
+          '  vec3 tint = vec3(0.0);',
+          '  float chroma = 0.0;',
+          '  if (mode > 1.5 && mode < 2.5) {',
+          '    tint = vec3(-1.0, 0.378, -0.806);',
+          '    chroma = 0.22745;',
+          '  } else if (mode > 2.5 && mode < 3.5) {',
+          '    tint = vec3(0.805, -0.135, -1.0);',
+          '    chroma = 0.24314;',
+          '  } else if (mode > 3.5) {',
+          '    tint = vec3(-0.84, 0.148, 1.0);',
+          '    chroma = 0.23529;',
+          '  }',
+          '  return clamp(vec3(luma) + tint * chroma * envelope, 0.0, 1.0);',
+          '}',
+          'void main() {',
+          '  float height = heightAt(vUv);',
+          '  float right = heightAt(vUv + vec2(uHeightTexel.x, 0.0));',
+          '  float up = heightAt(vUv + vec2(0.0, uHeightTexel.y));',
+          '  vec2 gradient = vec2(right - height, (up - height) * uCellAspect);',
+          '  float motionScale = clamp(uMotionStrength, 0.0, 1.0);',
+          '  float naturalMode = 1.0 - step(0.5, abs(uMotionMode - 1.0));',
+          '  float breathMode = 1.0 - step(0.5, abs(uMotionMode - 2.0));',
+          '  float particleMode = 1.0 - step(0.5, abs(uMotionMode - 3.0));',
+          '  float codeMode = 1.0 - step(0.5, abs(uMotionMode - 4.0));',
+          '  float effectScale = clamp(motionScale * (1.0 + codeMode * 0.18), 0.0, 1.0);',
+          '  float breathEnabled = max(max(naturalMode, breathMode), codeMode);',
+          '  float particleEnabled = max(max(naturalMode, particleMode), codeMode * 0.42);',
+          '  float codeEnabled = max(naturalMode, codeMode);',
+          '  float baseBreathing = 1.0 + sin(uTime * 0.00055 + vUv.y * 8.0) * 0.035;',
+          '  float breathSignal = sin(uTime * 0.00072 + vUv.y * 5.4 + height * 1.8);',
+          '  float codeBreathSignal = sin(uTime * 0.00038 + height * 1.6);',
+          '  float breathing = baseBreathing * (1.0 + breathSignal * 0.055 * effectScale * breathEnabled + codeBreathSignal * 0.034 * effectScale * codeMode);',
+          '  float localStrength = breathing;',
+          '  vec2 displacement = gradient * uSourceTexel * uStrength * localStrength;',
+          '  float depthBias = (height - 0.5) * 0.12;',
+          '  displacement += vec2(depthBias, -depthBias * 0.55) * uSourceTexel * uStrength;',
+          '  vec2 displacedUv = clamp(vUv - displacement, uSourceTexel, 1.0 - uSourceTexel);',
+          '  vec4 color = texture(uAscii, displacedUv);',
+          '  float colorLuma = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));',
+          '  float highlightGuard = 1.0 - smoothstep(0.62, 0.96, colorLuma) * 0.72;',
+          '  color.rgb *= 1.0 + (breathSignal * 0.09 * breathEnabled + codeBreathSignal * 0.07 * codeMode) * effectScale * highlightGuard;',
+          '  vec2 motionCell = floor(vUv * max(uGrid, vec2(1.0)));',
+          '  float seed = cellNoise(motionCell);',
+          '  float particlePulse = pow(max(0.0, sin(uTime * 0.00148 + seed * 39.0)), 7.0);',
+          '  float particleGate = step(0.61, cellNoise(motionCell + vec2(19.7, 7.3)));',
+          '  float inkMask = smoothstep(0.018, 0.22, colorLuma);',
+          '  color.rgb += vec3(1.0, 0.91, 0.70) * particlePulse * particleGate * particleEnabled * effectScale * inkMask * highlightGuard * 0.33;',
+          '  float codeSpeed = 0.00125 + codeMode * 0.0008;',
+          '  float codeCurve = sin(vUv.y * 8.0 - uTime * 0.00024) * codeMode * 1.15;',
+          '  float codeWave = 0.5 + 0.5 * sin(vUv.y * 31.0 + vUv.x * 10.0 + codeCurve - uTime * codeSpeed);',
+          '  float ribbonPower = 15.0 - codeMode * 6.0;',
+          '  float codeBreathEnvelope = 1.0 - codeMode * 0.42 + (0.5 + 0.5 * codeBreathSignal) * codeMode * 0.42;',
+          '  float codeRibbon = pow(codeWave, ribbonPower) * (0.42 + seed * 0.58) * codeBreathEnvelope;',
+          '  vec3 ribbonColor = mix(color.rgb, vec3(1.0, 0.93, 0.78), 0.62);',
+          '  color.rgb += ribbonColor * codeRibbon * codeEnabled * effectScale * inkMask * highlightGuard * (0.22 + codeMode * 0.10);',
+          '  float finalLuma = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));',
+          '  if (uColorMode > 0.5) color.rgb = monochromeTone(finalLuma, uColorMode);',
+          '  outColor = color;',
+          '}'
+        ].join('\n');
+
+        const compile = (type, source) => {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            throw new Error(gl.getShaderInfoLog(shader) || 'Shader compilation failed');
+          }
+          return shader;
+        };
+
+        let program;
+        try {
+          program = gl.createProgram();
+          gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
+          gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+          gl.linkProgram(program);
+          if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            throw new Error(gl.getProgramInfoLog(program) || 'Shader linking failed');
+          }
+        } catch (error) {
+          console.warn('Displacement renderer unavailable:', error);
+          target.style.display = 'none';
+          return null;
+        }
+
+        const vertices = new Float32Array([
+          -1, -1, 0, 0,
+           1, -1, 1, 0,
+          -1,  1, 0, 1,
+           1,  1, 1, 1
+        ]);
+        const vertexArray = gl.createVertexArray();
+        const buffer = gl.createBuffer();
+        gl.bindVertexArray(vertexArray);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        const stride = 4 * Float32Array.BYTES_PER_ELEMENT;
+        const positionLocation = gl.getAttribLocation(program, 'aPosition');
+        const uvLocation = gl.getAttribLocation(program, 'aUv');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, stride, 0);
+        gl.enableVertexAttribArray(uvLocation);
+        gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+
+        const createTexture = () => {
+          const texture = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          return texture;
+        };
+        const asciiTexture = createTexture();
+        const heightTexture = createTexture();
+        const uniforms = {
+          ascii: gl.getUniformLocation(program, 'uAscii'),
+          height: gl.getUniformLocation(program, 'uHeight'),
+          heightTexel: gl.getUniformLocation(program, 'uHeightTexel'),
+          sourceTexel: gl.getUniformLocation(program, 'uSourceTexel'),
+          cellAspect: gl.getUniformLocation(program, 'uCellAspect'),
+          strength: gl.getUniformLocation(program, 'uStrength'),
+          motionMode: gl.getUniformLocation(program, 'uMotionMode'),
+          motionStrength: gl.getUniformLocation(program, 'uMotionStrength'),
+          colorMode: gl.getUniformLocation(program, 'uColorMode'),
+          grid: gl.getUniformLocation(program, 'uGrid'),
+          time: gl.getUniformLocation(program, 'uTime')
+        };
+        let heightWidth = 1;
+        let heightHeight = 1;
+        let ready = false;
+
+        const upload = (unit, texture, source) => {
+          gl.activeTexture(gl.TEXTURE0 + unit);
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+        };
+
+        return {
+          resize(width, height) {
+            if (target.width !== width || target.height !== height) {
+              target.width = width;
+              target.height = height;
+            }
+            gl.viewport(0, 0, width, height);
+          },
+          updateTextures(asciiSource, heightSource) {
+            upload(0, asciiTexture, asciiSource);
+            upload(1, heightTexture, heightSource);
+            heightWidth = Math.max(1, heightSource.width);
+            heightHeight = Math.max(1, heightSource.height);
+            ready = true;
+          },
+          render(time, strength, dpr, cellAspect, motionMode, motionStrength, colorMode) {
+            if (!ready) return;
+            gl.useProgram(program);
+            gl.bindVertexArray(vertexArray);
+            gl.uniform1i(uniforms.ascii, 0);
+            gl.uniform1i(uniforms.height, 1);
+            gl.uniform2f(uniforms.heightTexel, 1 / heightWidth, 1 / heightHeight);
+            gl.uniform2f(uniforms.sourceTexel, 1 / target.width, 1 / target.height);
+            gl.uniform1f(uniforms.cellAspect, cellAspect);
+            gl.uniform1f(uniforms.strength, strength * dpr);
+            gl.uniform1f(uniforms.motionMode, motionMode);
+            gl.uniform1f(uniforms.motionStrength, motionStrength / 100);
+            gl.uniform1f(uniforms.colorMode, colorMode);
+            gl.uniform2f(uniforms.grid, heightWidth, heightHeight);
+            gl.uniform1f(uniforms.time, time);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+          }
+        };
+      }
+
+      const warpModes = [
+        { label: '关闭', strength: 0 },
+        { label: '轻微', strength: 9 },
+        { label: '明显', strength: 17 },
+        { label: '超强', strength: 30 }
+      ];
+      const motionModes = [
+        { label: '代码呼吸', value: 1 },
+        { label: '呼吸', value: 2 },
+        { label: '星点', value: 3 },
+        { label: '字符潮汐', value: 4 },
+        { label: '关闭', value: 0 }
+      ];
+      const backgroundModes = [
+        { label: '艺术字符场', mode: 'art' },
+        { label: '纯黑', mode: 'black' },
+        { label: '原图', mode: 'original' }
+      ];
+      const colorModes = [
+        { label: '原色', mode: 'color' },
+        { label: '黑白', mode: 'neutral', tint: [0, 0, 0], chroma: 0 },
+        { label: '绿色', mode: 'green', tint: [-1, 0.378, -0.806], chroma: 58 },
+        { label: '橙色', mode: 'orange', tint: [0.805, -0.135, -1], chroma: 62 },
+        { label: '蓝色', mode: 'blue', tint: [-0.84, 0.148, 1], chroma: 60 }
+      ];
+      function applyColorMode(red, green, blue, modeIndex) {
+        const mode = colorModes[modeIndex];
+        if (mode.mode === 'color') return { red, green, blue };
+
+        const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        const envelope = Math.pow(Math.max(0, Math.sin(Math.PI * clamp(luma / 255))), 0.72);
+        return {
+          red: clamp(luma + mode.tint[0] * mode.chroma * envelope, 0, 255),
+          green: clamp(luma + mode.tint[1] * mode.chroma * envelope, 0, 255),
+          blue: clamp(luma + mode.tint[2] * mode.chroma * envelope, 0, 255)
+        };
+      }
+      const warpRenderer = createDisplacementRenderer(warpCanvas);
+
+      // Both palettes run from the lightest mark to the densest glyph. The
+      // 19-level set is more graphic; 27 levels preserve subtler photographic tone.
+      const palettes = [
+        { label: '19', glyphs: ".,:'\"/rcxuasSPARmWB" },
+        { label: '27', glyphs: ".,'\"/rtzxYyausSA4KU8RmDNBWM" }
+      ];
+      let glyphs = palettes[0].glyphs;
+      let motionSampleSource = null;
+      let motionCandidates = [];
+
+      const state = {
+        image: null,
+        samples: [],
+        gridSize: 8,
+        paletteIndex: 0,
+        colorModeIndex: 0,
+        contrast: -12,
+        temperature: 0,
+        tint: 0,
+        warpIndex: embedMode ? 3 : 2,
+        motionIndex: 0,
+        motionStrength: 82,
+        motionOverride: false,
+        width: 0,
+        height: 0,
+        dpr: 1,
+        reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        lastSampleKey: '',
+        backgroundModeIndex: 0,
+        segmentation: null,
+        analysisVersion: 0,
+        analysisToken: 0,
+        analyzing: false,
+        processorTimer: 0,
+        presetSaveTimer: 0,
+        columns: 0,
+        rows: 0,
+        staticReady: false,
+        framePending: false,
+        lastFrameTime: 0
+      };
+
+      function createAssetPreset() {
+        if (!state.staticReady || !state.samples.length) return null;
+        return {
+          version: 1,
+          capturedAt: Date.now(),
+          width: state.width,
+          height: state.height,
+          columns: state.columns,
+          rows: state.rows,
+          gridSize: state.gridSize,
+          paletteIndex: state.paletteIndex,
+          colorModeIndex: state.colorModeIndex,
+          contrast: state.contrast,
+          temperature: state.temperature,
+          tint: state.tint,
+          warpIndex: state.warpIndex,
+          motionIndex: state.motionIndex,
+          motionStrength: state.motionStrength,
+          backgroundModeIndex: state.backgroundModeIndex,
+          glyphs,
+          samples: state.samples.map((point) => ({ ...point }))
+        };
+      }
+
+      function scheduleAssetPresetSave() {
+        if (embedMode || !state.staticReady || !state.samples.length) return;
+        clearTimeout(state.presetSaveTimer);
+        state.presetSaveTimer = setTimeout(() => {
+          const preset = createAssetPreset();
+          if (!preset) return;
+          saveAssetPreset(preset).catch((error) => {
+            console.warn('Frozen asset preset could not be saved:', error);
+          });
+        }, 260);
+      }
+
+      function applyAssetPreset(preset) {
+        if (!preset || preset.version !== 1 || !Array.isArray(preset.samples) ||
+            !Number.isFinite(preset.width) || !Number.isFinite(preset.height) ||
+            !Number.isFinite(preset.columns) || !Number.isFinite(preset.rows)) {
+          return false;
+        }
+
+        embedWidth = preset.width;
+        embedHeight = preset.height;
+        state.gridSize = preset.gridSize;
+        state.paletteIndex = preset.paletteIndex;
+        state.colorModeIndex = preset.colorModeIndex;
+        state.contrast = preset.contrast;
+        state.temperature = preset.temperature;
+        state.tint = preset.tint;
+        state.warpIndex = preset.warpIndex;
+        state.motionIndex = preset.motionIndex;
+        state.motionStrength = preset.motionStrength;
+        state.backgroundModeIndex = preset.backgroundModeIndex;
+        glyphs = preset.glyphs || palettes[state.paletteIndex].glyphs;
+
+        gridRange.value = String(state.gridSize);
+        gridValue.value = state.gridSize.toFixed(1);
+        levelsSelect.value = String(state.paletteIndex);
+        colorSelect.value = String(state.colorModeIndex);
+        contrastRange.value = String(state.contrast);
+        contrastValue.value = formatSigned(state.contrast);
+        temperatureRange.value = String(state.temperature);
+        temperatureValue.value = formatSigned(state.temperature);
+        tintRange.value = String(state.tint);
+        tintValue.value = formatSigned(state.tint);
+        warpSelect.value = String(state.warpIndex);
+        motionSelect.value = String(state.motionIndex);
+        motionStrengthRange.value = String(state.motionStrength);
+        motionStrengthValue.value = String(state.motionStrength);
+        backgroundSelect.value = String(state.backgroundModeIndex);
+        levelLabel.textContent = `ASCII / ${glyphs.length} levels`;
+
+        resize();
+        state.image = null;
+        state.segmentation = null;
+        state.samples = preset.samples;
+        state.columns = preset.columns;
+        state.rows = preset.rows;
+        motionSampleSource = null;
+        motionCandidates = [];
+        rebuildHeightTexture(state.samples, state.columns, state.rows);
+        renderStaticPortrait();
+        state.lastSampleKey = `frozen:${preset.capturedAt || 0}`;
+        intro.classList.add('is-hidden');
+        setStatus(`${state.columns} × ${state.rows} 固定字符资产`);
+        requestRender();
+        return true;
+      }
+
+      if (!warpRenderer) {
+        warpSelect.disabled = true;
+        motionSelect.disabled = true;
+        motionStrengthRange.disabled = true;
+      } else if (state.reducedMotion) {
+        state.motionIndex = motionModes.findIndex((mode) => mode.value === 0);
+        motionSelect.value = String(state.motionIndex);
+      }
+
+      function setStatus(message) {
+        status.textContent = message;
+      }
+
+      function buildLoaderPortrait(image) {
+        const columns = 48;
+        const rows = 38;
+        loaderSampleCanvas.width = columns;
+        loaderSampleCanvas.height = rows;
+        loaderSampleCtx.clearRect(0, 0, columns, rows);
+        const loaderCellX = 0.62;
+        const loaderCellY = 0.92;
+        const rect = gridCoverRect(
+          image.width,
+          image.height,
+          columns * loaderCellX,
+          rows * loaderCellY,
+          loaderCellX,
+          loaderCellY
+        );
+        loaderSampleCtx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+        const pixels = loaderSampleCtx.getImageData(0, 0, columns, rows).data;
+        loaderAscii.replaceChildren();
+
+        for (let y = 0; y < rows; y++) {
+          let row = '';
+          for (let x = 0; x < columns; x++) {
+            const index = (y * columns + x) * 4;
+            const luma = (
+              pixels[index] * 0.2126 +
+              pixels[index + 1] * 0.7152 +
+              pixels[index + 2] * 0.0722
+            ) / 255;
+            const lightness = Math.max(0, Math.min(1, (luma - 0.5) * 1.24 + 0.5));
+            row += glyphs[Math.round(lightness * (glyphs.length - 1))];
+          }
+          const line = document.createElement('span');
+          line.style.setProperty('--row', y);
+          line.textContent = row;
+          loaderAscii.appendChild(line);
+        }
+      }
+
+      function updateProcessor(message, progress) {
+        const value = Math.max(0, Math.min(100, Math.round(progress)));
+        processorStage.textContent = message;
+        processorPercent.textContent = `${String(value).padStart(2, '0')}%`;
+        processorBar.style.width = `${value}%`;
+      }
+
+      function showProcessor(image) {
+        clearTimeout(state.processorTimer);
+        buildLoaderPortrait(image);
+        updateProcessor('读取照片与颜色', 6);
+        processor.classList.add('is-active');
+        processor.setAttribute('aria-hidden', 'false');
+      }
+
+      function hideProcessor(message = '人像字符化完成') {
+        updateProcessor(message, 100);
+        clearTimeout(state.processorTimer);
+        state.processorTimer = setTimeout(() => {
+          processor.classList.remove('is-active');
+          processor.setAttribute('aria-hidden', 'true');
+        }, 620);
+      }
+
+      function prepareInferenceImage(image) {
+        const maxSide = 720;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        inferenceCanvas.width = Math.max(1, Math.round(image.width * scale));
+        inferenceCanvas.height = Math.max(1, Math.round(image.height * scale));
+        inferenceCtx.clearRect(0, 0, inferenceCanvas.width, inferenceCanvas.height);
+        inferenceCtx.drawImage(image, 0, 0, inferenceCanvas.width, inferenceCanvas.height);
+        return inferenceCanvas;
+      }
+
+      async function analyzePortrait(image) {
+        const token = ++state.analysisToken;
+        showProcessor(image);
+        state.analyzing = true;
+        state.segmentation = null;
+        state.analysisVersion += 1;
+        state.lastSampleKey = '';
+        setStatus('正在分离人像并分析明暗…');
+
+        try {
+          if (!window.tf || !window.bodySegmentation) {
+            throw new Error('Portrait analysis libraries are unavailable.');
+          }
+
+          await window.tf.setBackend('webgl');
+          await window.tf.ready();
+          const input = prepareInferenceImage(image);
+          updateProcessor('加载人物分割网络', 22);
+
+          const segmentationModel = window.bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
+          const segmenter = await window.bodySegmentation.createSegmenter(segmentationModel, {
+            runtime: 'tfjs',
+            modelType: 'general'
+          });
+          updateProcessor('分离人物与背景', 38);
+          const segmentations = await segmenter.segmentPeople(input, {
+            multiSegmentation: false,
+            segmentBodyParts: false
+          });
+          const maskImage = await segmentations[0].mask.toImageData();
+          const maskData = new Float32Array(maskImage.width * maskImage.height);
+          for (let i = 0; i < maskData.length; i++) {
+            maskData[i] = maskImage.data[i * 4 + 3] / 255;
+          }
+          segmenter.dispose();
+
+          if (token !== state.analysisToken) return;
+          state.segmentation = {
+            data: maskData,
+            width: maskImage.width,
+            height: maskImage.height
+          };
+          backgroundSelect.value = String(state.backgroundModeIndex);
+          state.analysisVersion += 1;
+          state.lastSampleKey = '';
+          state.staticReady = false;
+          setStatus(`背景已分离，${glyphs.length} 级明暗映射已就绪`);
+          updateProcessor('分析亮度、对比度与字符墨量', 84);
+          hideProcessor('二维 ASCII 人像完成');
+          requestRender();
+        } catch (error) {
+          console.warn('Portrait analysis fallback:', error);
+          if (token === state.analysisToken) {
+            setStatus(state.segmentation
+              ? '背景已去除；明暗字符映射已就绪'
+              : '背景分离不可用，保留完整照片');
+            hideProcessor(state.segmentation ? '背景分离完成' : '切换至基础字符模式');
+          }
+        } finally {
+          if (token === state.analysisToken) {
+            state.analyzing = false;
+            state.lastSampleKey = '';
+            state.staticReady = false;
+            requestRender();
+          }
+        }
+      }
+
+      function fieldSample(field, gridX, gridY, rect) {
+        if (!field) return null;
+        const u = (gridX + 0.5 - rect.x) / rect.width;
+        const v = (gridY + 0.5 - rect.y) / rect.height;
+        if (u < 0 || u > 1 || v < 0 || v > 1) return 0;
+        const x = Math.max(0, Math.min(field.width - 1, Math.round(u * (field.width - 1))));
+        const y = Math.max(0, Math.min(field.height - 1, Math.round(v * (field.height - 1))));
+        return field.data[y * field.width + x];
+      }
+
+      function resize() {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        const compactLayout = innerWidth <= 740;
+        const panelRect = controlPanel.getBoundingClientRect();
+        state.width = embedMode
+          ? embedWidth
+          : compactLayout
+            ? innerWidth
+            : Math.max(320, Math.floor(panelRect.left - 18));
+        state.height = embedMode
+          ? embedHeight
+          : compactLayout
+            ? Math.max(1, Math.floor(panelRect.top - 10))
+            : innerHeight;
+        state.dpr = dpr;
+        canvas.width = Math.round(state.width * dpr);
+        canvas.height = Math.round(state.height * dpr);
+        canvas.style.width = `${state.width}px`;
+        canvas.style.height = `${state.height}px`;
+        motionCanvas.width = canvas.width;
+        motionCanvas.height = canvas.height;
+        motionCanvas.style.width = `${state.width}px`;
+        motionCanvas.style.height = `${state.height}px`;
+        warpCanvas.style.width = `${state.width}px`;
+        warpCanvas.style.height = `${state.height}px`;
+        staticCanvas.width = canvas.width;
+        staticCanvas.height = canvas.height;
+        glowCanvas.width = canvas.width;
+        glowCanvas.height = canvas.height;
+        const warpDpr = Math.min(dpr, 1.5);
+        warpRenderer?.resize(
+          Math.round(state.width * warpDpr),
+          Math.round(state.height * warpDpr)
+        );
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      }
+
+      function coverRect(sourceWidth, sourceHeight, targetWidth, targetHeight) {
+        const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+        const width = sourceWidth * scale;
+        const height = sourceHeight * scale;
+        return {
+          x: (targetWidth - width) * 0.5,
+          y: (targetHeight - height) * 0.5,
+          width,
+          height
+        };
+      }
+
+      function gridCoverRect(
+        sourceWidth,
+        sourceHeight,
+        displayWidth,
+        displayHeight,
+        cellWidth,
+        cellHeight
+      ) {
+        const displayRect = coverRect(
+          sourceWidth,
+          sourceHeight,
+          displayWidth,
+          displayHeight
+        );
+        return {
+          x: displayRect.x / cellWidth,
+          y: displayRect.y / cellHeight,
+          width: displayRect.width / cellWidth,
+          height: displayRect.height / cellHeight
+        };
+      }
+
+      function rebuildHeightTexture(samples, columns, rows) {
+        heightCanvas.width = columns;
+        heightCanvas.height = rows;
+        const heightImage = heightCtx.createImageData(columns, rows);
+        for (let index = 0; index < samples.length; index++) {
+          const value = Math.round(clamp(samples[index].height) * 255);
+          const offset = index * 4;
+          heightImage.data[offset] = value;
+          heightImage.data[offset + 1] = value;
+          heightImage.data[offset + 2] = value;
+          heightImage.data[offset + 3] = 255;
+        }
+        heightCtx.putImageData(heightImage, 0, 0);
+      }
+
+      function rebuildSamples() {
+        if (!state.image) return;
+
+        const { cellX, cellY } = getGridMetrics();
+        const columns = Math.ceil(state.width / cellX);
+        const rows = Math.ceil(state.height / cellY);
+        const backgroundMode = backgroundModes[state.backgroundModeIndex].mode;
+        const key = `${columns}:${rows}:${state.gridSize}:${state.image.width}:${state.image.height}:${state.analysisVersion}:${state.backgroundModeIndex}:${state.paletteIndex}:${state.colorModeIndex}:${state.contrast}:${state.temperature}:${state.tint}`;
+        if (key === state.lastSampleKey) return;
+
+        sampleCanvas.width = columns;
+        sampleCanvas.height = rows;
+        sampleCtx.clearRect(0, 0, columns, rows);
+
+        // The source must be fitted in CSS-pixel space before converting the
+        // rectangle into grid coordinates. Using columns/rows directly would
+        // stretch the portrait because character cells are not square.
+        const rect = gridCoverRect(
+          state.image.width,
+          state.image.height,
+          state.width,
+          state.height,
+          cellX,
+          cellY
+        );
+        sampleCtx.drawImage(state.image, rect.x, rect.y, rect.width, rect.height);
+        const pixels = sampleCtx.getImageData(0, 0, columns, rows).data;
+        const rawSamples = [];
+
+        for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < columns; x++) {
+            const index = (y * columns + x) * 4;
+            const r = pixels[index];
+            const g = pixels[index + 1];
+            const b = pixels[index + 2];
+            const luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+            const segmentedValue = fieldSample(state.segmentation, x, y, rect);
+            rawSamples.push({
+              x, y, r, g, b, luma,
+              subject: segmentedValue == null ? 1 : segmentedValue
+            });
+          }
+        }
+
+        // Auto-level the portrait itself rather than applying one fixed curve to
+        // every photograph. Percentile endpoints ignore isolated specular pixels
+        // and deep noise, ensuring the subject uses the full character palette.
+        const subjectLumas = rawSamples
+          .filter((point) => backgroundMode === 'original' ||
+            !state.segmentation || point.subject > 0.22)
+          .map((point) => point.luma)
+          .sort((a, b) => a - b);
+        const percentile = (values, amount) => {
+          if (!values.length) return amount;
+          const index = Math.max(0, Math.min(values.length - 1,
+            Math.round((values.length - 1) * amount)
+          ));
+          return values[index];
+        };
+        const blackPoint = percentile(subjectLumas, 0.025);
+        // Use a conservative white point so a broad highlight area does not
+        // collapse into pure white. Only the brightest 0.5% may clip.
+        const whitePoint = percentile(subjectLumas, 0.995);
+        const tonalRange = Math.max(0.16, whitePoint - blackPoint);
+        for (const point of rawSamples) {
+          point.toneLuma = Math.max(0, Math.min(1,
+            (point.luma - blackPoint) / tonalRange
+          ));
+        }
+
+        const rawAt = (x, y) => {
+          const safeX = Math.max(0, Math.min(columns - 1, x));
+          const safeY = Math.max(0, Math.min(rows - 1, y));
+          return rawSamples[safeY * columns + safeX];
+        };
+        const lumaAt = (x, y) => rawAt(x, y).toneLuma;
+        const subjectAt = (x, y) => rawAt(x, y).subject;
+        const contrastAmount = 1 + state.contrast * 0.0032;
+
+        // Every output mark remains at the center of its own fixed 2D cell.
+        // A small luminance blur suppresses pixel noise; local detail is mixed
+        // back in before quantizing the photograph into the selected ink palette.
+        const samples = rawSamples.map((point) => {
+          const { x, y } = point;
+          const topLeft = lumaAt(x - 1, y - 1);
+          const top = lumaAt(x, y - 1);
+          const topRight = lumaAt(x + 1, y - 1);
+          const left = lumaAt(x - 1, y);
+          const right = lumaAt(x + 1, y);
+          const bottomLeft = lumaAt(x - 1, y + 1);
+          const bottom = lumaAt(x, y + 1);
+          const bottomRight = lumaAt(x + 1, y + 1);
+          const smooth = (
+            topLeft + topRight + bottomLeft + bottomRight +
+            (top + left + right + bottom) * 2 + point.toneLuma * 4
+          ) / 16;
+          const gradientX = (right - left) * 0.5;
+          const gradientY = (bottom - top) * 0.5;
+          const edgeStrength = Math.min(1, Math.hypot(gradientX, gradientY) * 4.2);
+          const localPit = Math.min(1, Math.max(0, smooth - point.toneLuma) * 5.5);
+          const restored = smooth + (point.toneLuma - smooth) * 1.16;
+          const boundedTone = clamp(restored);
+
+          // Endpoint-preserving contrast avoids the hard clipping produced by
+          // a linear contrast multiplier. A gentle film-style shoulder then
+          // separates pale skin, fabric and reflected light before pure white.
+          const contrasted = applyMidpointContrast(boundedTone, contrastAmount);
+          const shoulderAmount = clamp((contrasted - 0.70) / 0.30);
+          const highlightRolled = contrasted - 0.045 * Math.sin(Math.PI * shoulderAmount);
+          const analyzedTone = Math.pow(highlightRolled, 1.02);
+
+          // Preserve the photograph's exposure. Automatic analysis contributes
+          // only a small amount of local separation, so a naturally pale cheek
+          // is not promoted to paper white merely because it is the local peak.
+          const sourceTone = applyMidpointContrast(point.luma, contrastAmount);
+          const lightness = clamp(sourceTone * 0.80 + analyzedTone * 0.20);
+
+          // The palette is ordered from punctuation to broad, dense letters.
+          // Bright areas therefore move toward P/A/R/m/W while shadows retreat
+          // toward /, r, c and punctuation, matching the supplied reference.
+          const glyphDensity = clamp(
+            lightness + edgeStrength * 0.07 - localPit * 0.055
+          );
+          const printGrain = ((((x * 13 + y * 17) % 29) / 28) - 0.5) * 0.62;
+          const glyphIndex = Math.max(0, Math.min(
+            glyphs.length - 1,
+            Math.round(glyphDensity * (glyphs.length - 1) + printGrain)
+          ));
+
+          const subjectSmooth = (
+            subjectAt(x - 1, y - 1) + subjectAt(x + 1, y - 1) +
+            subjectAt(x - 1, y + 1) + subjectAt(x + 1, y + 1) +
+            (subjectAt(x, y - 1) + subjectAt(x - 1, y) +
+              subjectAt(x + 1, y) + subjectAt(x, y + 1)) * 2 +
+            point.subject * 4
+          ) / 16;
+          const foregroundWeight = state.segmentation
+            ? Math.max(0, Math.min(1, (subjectSmooth - 0.08) / 0.58))
+            : 1;
+          const isArtBackground = backgroundMode === 'art' && foregroundWeight < 0.48;
+          const backgroundCharacters = '/rrttzz';
+          const backgroundGlyph = backgroundCharacters[
+            (x + y * 2 + Math.floor(point.toneLuma * 4)) % backgroundCharacters.length
+          ];
+          const maskAlpha = backgroundMode === 'black' ? foregroundWeight : 1;
+
+          const colorLuma = 0.2126 * point.r + 0.7152 * point.g + 0.0722 * point.b;
+          const colorSaturation = 1;
+          const colorRed = Math.max(0, Math.min(255,
+            colorLuma + (point.r - colorLuma) * colorSaturation
+          ));
+          const colorGreen = Math.max(0, Math.min(255,
+            colorLuma + (point.g - colorLuma) * colorSaturation
+          ));
+          const colorBlue = Math.max(0, Math.min(255,
+            colorLuma + (point.b - colorLuma) * colorSaturation
+          ));
+
+          // Selectively soften yellow rather than desaturating the whole image.
+          // Pure yellows receive up to 14% reduction; orange skin tones receive
+          // only a small fraction, preserving healthy red variation.
+          const yellowPresence = clamp(
+            (Math.min(colorRed, colorGreen) - colorBlue) / 90
+          );
+          const yellowBalance = 1 - clamp(Math.abs(colorRed - colorGreen) / 120);
+          const yellowMask = yellowPresence * (0.35 + yellowBalance * 0.65);
+          const yellowChroma = 1 - yellowMask * 0.14;
+          const balancedColorRed = colorLuma + (colorRed - colorLuma) * yellowChroma;
+          const balancedColorGreen = colorLuma + (colorGreen - colorLuma) * yellowChroma;
+          const balancedColorBlue = colorLuma + (colorBlue - colorLuma) * yellowChroma;
+
+          // Temperature moves along blue <-> amber; tint moves along
+          // green <-> magenta. Luminance is removed again below, so these
+          // controls change chroma without changing the established tone curve.
+          const gradedColorRed = balancedColorRed + state.temperature * 0.68 + state.tint * 0.34;
+          const gradedColorGreen = balancedColorGreen + state.temperature * 0.10 - state.tint * 0.56;
+          const gradedColorBlue = balancedColorBlue - state.temperature * 0.74 + state.tint * 0.34;
+
+          // Keep hue and saturation faithful to the source photograph. The
+          // artistic curve controls luminance only; chroma fades solely at the
+          // black/white endpoints so neutral extremes stay clean.
+          const targetLuma = 255 * lightness;
+          const chromaEnvelope = Math.pow(Math.sin(Math.PI * lightness), 0.72);
+          const originalColorLuma = 0.2126 * gradedColorRed +
+            0.7152 * gradedColorGreen + 0.0722 * gradedColorBlue;
+          const originalChroma = chromaEnvelope;
+          const originalRed = clamp(targetLuma + (gradedColorRed - originalColorLuma) * originalChroma, 0, 255);
+          const originalGreen = clamp(targetLuma + (gradedColorGreen - originalColorLuma) * originalChroma, 0, 255);
+          const originalBlue = clamp(targetLuma + (gradedColorBlue - originalColorLuma) * originalChroma, 0, 255);
+
+          // The distant character field is only a dimmer version of the same
+          // source color, not a separate cool-blue grade.
+          const backgroundColorScale = 0.44;
+          const backgroundRed = originalRed * backgroundColorScale;
+          const backgroundGreen = originalGreen * backgroundColorScale;
+          const backgroundBlue = originalBlue * backgroundColorScale;
+          const foregroundRed = originalRed;
+          const foregroundGreen = originalGreen;
+          const foregroundBlue = originalBlue;
+
+          const gradeMix = backgroundMode === 'art' ? foregroundWeight : 1;
+          const baseRed = backgroundMode === 'original' ? originalRed :
+            backgroundRed + (foregroundRed - backgroundRed) * gradeMix;
+          const baseGreen = backgroundMode === 'original' ? originalGreen :
+            backgroundGreen + (foregroundGreen - backgroundGreen) * gradeMix;
+          const baseBlue = backgroundMode === 'original' ? originalBlue :
+            backgroundBlue + (foregroundBlue - backgroundBlue) * gradeMix;
+          const renderColor = applyColorMode(
+            baseRed,
+            baseGreen,
+            baseBlue,
+            state.colorModeIndex
+          );
+          const backgroundAlpha = 0.27 + point.toneLuma * 0.085;
+          // Keep the portrait nearly opaque at every tone and fully opaque at
+          // both endpoints. Otherwise a nominal RGB white is composited down
+          // to grey before it ever reaches the screen.
+          const foregroundAlpha = 0.96 + Math.abs(lightness - 0.5) * 0.08;
+          const baseAlpha = backgroundMode === 'art'
+            ? backgroundAlpha + (foregroundAlpha - backgroundAlpha) * foregroundWeight
+            : foregroundAlpha;
+
+          return {
+            gridX: point.x,
+            gridY: point.y,
+            x: (point.x + 0.5) * cellX,
+            y: (point.y + 0.5) * cellY,
+            glyph: isArtBackground ? backgroundGlyph : glyphs[glyphIndex],
+            glyphIndex,
+            isArtBackground,
+            foregroundWeight,
+            r: point.r,
+            g: point.g,
+            b: point.b,
+            luma: point.toneLuma,
+            height: backgroundMode === 'art'
+              ? 0.5 + (smooth - 0.5) * (0.28 + foregroundWeight * 0.72)
+              : smooth,
+            lightness,
+            ink: glyphDensity,
+            baseRed: renderColor.red,
+            baseGreen: renderColor.green,
+            baseBlue: renderColor.blue,
+            baseAlpha,
+            maskAlpha
+          };
+        });
+
+        rebuildHeightTexture(samples, columns, rows);
+
+        state.samples = samples;
+        state.columns = columns;
+        state.rows = rows;
+        renderStaticPortrait();
+        // Only cache a completed render. A failed frame must remain retryable
+        // instead of getting stuck behind the same sample key on a black canvas.
+        state.lastSampleKey = key;
+        scheduleAssetPresetSave();
+        setStatus(`${columns} × ${rows} 字符 · 网格 ${state.gridSize.toFixed(1)} · 对比度 ${formatSigned(state.contrast)} · ${glyphs.length} 级 · ${colorModes[state.colorModeIndex].label} · ${backgroundModes[state.backgroundModeIndex].label}`);
+      }
+
+      function setGlyphFont(targetCtx) {
+        const { fontSize } = getGridMetrics();
+        targetCtx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+        targetCtx.textAlign = 'center';
+        targetCtx.textBaseline = 'middle';
+      }
+
+      function paintGlyph(targetCtx, point, glyphIndex, glow = 0, opacityScale = 1) {
+        const tonedMode = colorModes[state.colorModeIndex].mode !== 'color';
+        const red = point.baseRed + (255 - point.baseRed) * glow;
+        const greenTarget = tonedMode ? 255 : 248;
+        const blueTarget = tonedMode ? 255 : 232;
+        const green = point.baseGreen + (greenTarget - point.baseGreen) * glow;
+        const blue = point.baseBlue + (blueTarget - point.baseBlue) * glow;
+        const inkLuminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        const transparentVisibility = point.isArtBackground
+          ? 0
+          : Math.pow(clamp((inkLuminance - 2) / 36), 0.72);
+        const alpha = Math.min(1, point.baseAlpha + glow * 0.12) *
+          point.maskAlpha * opacityScale *
+          (transparentMode ? transparentVisibility : 1);
+        if (alpha <= 0.001) return;
+        targetCtx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+        const character = point.isArtBackground ? point.glyph : glyphs[glyphIndex];
+        targetCtx.fillText(character, point.x, point.y);
+      }
+
+      function renderStaticPortrait() {
+        staticCtx.setTransform(1, 0, 0, 1, 0, 0);
+        if (transparentMode) {
+          staticCtx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
+        } else {
+          staticCtx.fillStyle = '#000';
+          staticCtx.fillRect(0, 0, staticCanvas.width, staticCanvas.height);
+        }
+
+        glowCtx.setTransform(1, 0, 0, 1, 0, 0);
+        glowCtx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+        glowCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        setGlyphFont(glowCtx);
+        for (const point of state.samples) {
+          const highlightGlow = clamp((point.lightness - 0.76) / 0.22);
+          if (point.maskAlpha <= 0.015 || point.foregroundWeight <= 0.12 || highlightGlow <= 0.01) continue;
+          paintGlyph(
+            glowCtx,
+            point,
+            point.glyphIndex,
+            0.035,
+            point.foregroundWeight * highlightGlow * 0.32
+          );
+        }
+        glowCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+        staticCtx.globalAlpha = 0.18;
+        staticCtx.filter = `blur(${Math.max(2, state.dpr * 2.4)}px)`;
+        staticCtx.drawImage(glowCanvas, 0, 0);
+        staticCtx.filter = 'none';
+        staticCtx.globalAlpha = 1;
+        staticCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        setGlyphFont(staticCtx);
+
+        for (const point of state.samples) {
+          if (point.maskAlpha <= 0.015) continue;
+          paintGlyph(staticCtx, point, point.glyphIndex);
+        }
+
+        staticCtx.setTransform(1, 0, 0, 1, 0, 0);
+        state.staticReady = true;
+        warpRenderer?.updateTextures(staticCanvas, heightCanvas);
+      }
+
+      function motionSeed(x, y, salt = 0) {
+        const value = Math.sin(x * 127.1 + y * 311.7 + salt * 74.7) * 43758.5453;
+        return value - Math.floor(value);
+      }
+
+      function getMotionCandidates() {
+        if (motionSampleSource === state.samples) return motionCandidates;
+        motionSampleSource = state.samples;
+        motionCandidates = state.samples.filter((point) =>
+          !point.isArtBackground &&
+          point.maskAlpha > 0.02 &&
+          point.foregroundWeight >= 0.5 &&
+          motionSeed(point.gridX, point.gridY, 2.7) <= 0.52
+        );
+        return motionCandidates;
+      }
+
+      function renderMotionOverlay(now, motionMode, motionStrength, transitionComposite = false) {
+        motionCtx.setTransform(1, 0, 0, 1, 0, 0);
+        motionCtx.clearRect(0, 0, motionCanvas.width, motionCanvas.height);
+        const glyphMotionEnabled = motionMode === 1 || motionMode === 4;
+        if (!glyphMotionEnabled || motionStrength <= 0 || !state.samples.length) return;
+        if (transitionComposite) {
+          motionCtx.drawImage(
+            warpCanvas,
+            0,
+            0,
+            motionCanvas.width,
+            motionCanvas.height
+          );
+        }
+
+        const { cellX, cellY } = getGridMetrics();
+        const strength = clamp(motionStrength / 100);
+        const isCharacterFlow = motionMode === 4;
+        const modeStrength = isCharacterFlow ? clamp(strength * 1.18) : strength;
+        const flowBreath = isCharacterFlow
+          ? 0.58 + (0.5 + 0.5 * Math.sin(now * 0.00038)) * 0.42
+          : 1;
+        const eligibleDensity = isCharacterFlow
+          ? (0.20 + flowBreath * 0.32) * (0.68 + modeStrength * 0.32)
+          : 0.18 * (0.52 + strength * 0.48);
+        const randomSpeed = isCharacterFlow ? 0.00128 : 0.00142;
+        const ribbonSpeed = isCharacterFlow ? 0.00205 : 0.00125;
+        const glitchStepMs = 420 - modeStrength * 120;
+
+        motionCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        setGlyphFont(motionCtx);
+        for (const point of getMotionCandidates()) {
+          const gate = motionSeed(point.gridX, point.gridY, 2.7);
+          const clusterX = Math.floor(point.gridX / 4);
+          const clusterY = Math.floor(point.gridY / 3);
+          const phaseOffset = isCharacterFlow
+            ? motionSeed(clusterX, clusterY, 40.2) * 0.96
+            : 0;
+          const localGlitchTime = now / glitchStepMs + phaseOffset;
+          const glitchTick = Math.floor(localGlitchTime);
+          const glitchProgress = localGlitchTime - glitchTick;
+          const transitionEnvelope = isCharacterFlow
+            ? Math.pow(Math.sin(Math.PI * glitchProgress), 0.72)
+            : 1;
+          if (gate > eligibleDensity) continue;
+
+          const randomPhase = now * randomSpeed +
+            motionSeed(point.gridX, point.gridY, 8.3) * Math.PI * 2;
+          const randomPulse = Math.pow(
+            Math.max(0, Math.sin(randomPhase)),
+            isCharacterFlow ? 4.2 : 6.2
+          );
+          const flowCurve = isCharacterFlow
+            ? Math.sin(point.gridY * 0.095 - now * 0.00024) * 1.15
+            : 0;
+          const ribbonPhase = point.gridY * 0.36 + point.gridX * 0.06 +
+            flowCurve - now * ribbonSpeed;
+          const ribbonPulse = Math.pow(
+            Math.max(0, Math.sin(ribbonPhase)),
+            isCharacterFlow ? 3.0 : 6.0
+          ) * (0.58 + motionSeed(point.gridX, point.gridY, 20.4) * 0.42);
+          const clusterSeed = isCharacterFlow
+            ? motionSeed(
+                clusterX,
+                clusterY,
+                glitchTick + 48.2
+              )
+            : 0;
+          const clusterBurst = isCharacterFlow
+            ? Math.pow(clamp((clusterSeed - 0.56) / 0.44), 0.68) * flowBreath
+            : 0;
+          const rawPulse = Math.max(
+            randomPulse * (isCharacterFlow ? 0.64 * flowBreath : 0.78),
+            ribbonPulse * (isCharacterFlow ? flowBreath : 1),
+            clusterBurst
+          );
+          const pulse = isCharacterFlow
+            ? rawPulse * transitionEnvelope
+            : rawPulse;
+          if (pulse < (isCharacterFlow ? 0.035 : 0.22)) continue;
+
+          const glitchDirectionSeed = isCharacterFlow
+            ? motionSeed(point.gridX, point.gridY, glitchTick + 66.7)
+            : motionSeed(point.gridX, point.gridY, 14.1);
+          const direction = isCharacterFlow
+            ? (glitchDirectionSeed > 0.5 ? 1 : -1)
+            : (Math.sin(ribbonPhase) > 0.72 ? 1 : (glitchDirectionSeed > 0.5 ? 1 : -1));
+          const glitchDistanceSeed = isCharacterFlow
+            ? motionSeed(point.gridX, point.gridY, glitchTick + 81.4)
+            : 0;
+          const distance = isCharacterFlow
+            ? 1 + Math.floor(glitchDistanceSeed * (pulse > 0.70 ? 5 : 4))
+            : (pulse > 0.76 ? 2 : 1);
+          const liveGlyphIndex = Math.max(0, Math.min(
+            glyphs.length - 1,
+            point.glyphIndex + direction * distance
+          ));
+          if (liveGlyphIndex === point.glyphIndex) continue;
+
+          // Only the active cell is covered. The confirmed static portrait and
+          // every inactive face glyph remain byte-for-byte the original render.
+          const transitionMix = isCharacterFlow
+            ? clamp(pulse / 0.78) * modeStrength
+            : 1;
+          const coverAlpha = isCharacterFlow
+            ? transitionMix * 0.94
+            : 0.86 + pulse * 0.14;
+          if (transitionComposite) {
+            motionCtx.clearRect(point.gridX * cellX, point.gridY * cellY, cellX, cellY);
+          } else {
+            motionCtx.fillStyle = `rgba(0, 0, 0, ${coverAlpha})`;
+            motionCtx.fillRect(point.gridX * cellX, point.gridY * cellY, cellX, cellY);
+          }
+          const glow = pulse * (isCharacterFlow ? 0.22 : 0.13) * modeStrength;
+          const tonedMode = colorModes[state.colorModeIndex].mode !== 'color';
+          const red = point.baseRed + (255 - point.baseRed) * glow;
+          const greenTarget = tonedMode ? 255 : 246;
+          const blueTarget = tonedMode ? 255 : 224;
+          const green = point.baseGreen + (greenTarget - point.baseGreen) * glow;
+          const blue = point.baseBlue + (blueTarget - point.baseBlue) * glow;
+          const alpha = clamp(point.baseAlpha * (0.82 + pulse * 0.18)) * transitionMix;
+          motionCtx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+          motionCtx.fillText(glyphs[liveGlyphIndex], point.x, point.y);
+        }
+        motionCtx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+
+      function renderFrame(now = 0) {
+        state.framePending = false;
+        const warpStrength = warpModes[state.warpIndex].strength;
+        const motionSuppressed = state.reducedMotion && !state.motionOverride;
+        const motionMode = motionSuppressed || !warpRenderer
+          ? 0
+          : motionModes[state.motionIndex].value;
+        const motionRequested = motionMode > 0 && state.motionStrength > 0;
+        let motionActive = state.staticReady && motionRequested;
+        let warpActive = Boolean(warpRenderer && state.staticReady && warpStrength > 0);
+        let shouldAnimateWarp = warpActive && !state.reducedMotion;
+        let gpuEffectEnabled = warpStrength > 0 || motionActive;
+        let gpuActive = Boolean(warpRenderer && state.staticReady && gpuEffectEnabled);
+
+        // All continuous layers share one 24 FPS loop. Character conversion and
+        // the confirmed static portrait remain cached between control changes.
+        if ((shouldAnimateWarp || motionActive) && now - state.lastFrameTime < 42) {
+          requestRender();
+          return;
+        }
+        state.lastFrameTime = now;
+
+        try {
+          rebuildSamples();
+        } catch (error) {
+          console.error('ASCII render failed:', error);
+          state.lastSampleKey = '';
+          state.staticReady = false;
+          warpCanvas.style.display = 'none';
+          motionCtx.setTransform(1, 0, 0, 1, 0, 0);
+          motionCtx.clearRect(0, 0, motionCanvas.width, motionCanvas.height);
+          intro.classList.remove('is-hidden');
+          setStatus('渲染中断，请重新选择肖像');
+          return;
+        }
+        motionActive = state.staticReady && motionRequested;
+        warpActive = Boolean(warpRenderer && state.staticReady && warpStrength > 0);
+        shouldAnimateWarp = warpActive && !state.reducedMotion;
+        gpuEffectEnabled = warpStrength > 0 || motionActive;
+        gpuActive = Boolean(warpRenderer && state.staticReady && gpuEffectEnabled);
+        const transparentGlyphComposite = transparentMode && gpuActive && motionActive &&
+          (motionMode === 1 || motionMode === 4);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        if (transparentMode) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (state.staticReady && !(transparentMode && gpuActive)) {
+          ctx.drawImage(staticCanvas, 0, 0);
+        } else if (!transparentMode) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        if (gpuActive) {
+          warpCanvas.style.display = 'block';
+          warpCanvas.style.visibility = transparentGlyphComposite ? 'hidden' : 'visible';
+          const { cellX, cellY } = getGridMetrics();
+          warpRenderer.render(
+            now,
+            warpStrength,
+            Math.min(state.dpr, 1.5),
+            cellX / cellY,
+            motionMode,
+            state.motionStrength,
+            state.colorModeIndex
+          );
+        } else {
+          warpCanvas.style.display = 'none';
+          warpCanvas.style.visibility = 'visible';
+        }
+        renderMotionOverlay(
+          now,
+          motionMode,
+          state.motionStrength,
+          transparentGlyphComposite
+        );
+
+        if (shouldAnimateWarp || motionActive) {
+          requestRender();
+        }
+      }
+
+      function requestRender() {
+        if (state.framePending) return;
+        state.framePending = true;
+        requestAnimationFrame(renderFrame);
+      }
+
+      async function decodeFile(file, { persist = true } = {}) {
+        if (!file) return;
+        setStatus('正在读取图像…');
+
+        try {
+          let image;
+          if ('createImageBitmap' in window) {
+            try {
+              image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+            } catch (_) {
+              image = null;
+            }
+          }
+
+          if (!image) {
+            const url = URL.createObjectURL(file);
+            image = await new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = url;
+            });
+            URL.revokeObjectURL(url);
+          }
+
+          state.image = image;
+          state.lastSampleKey = '';
+          state.staticReady = false;
+          intro.classList.add('is-hidden');
+          setStatus('图像已载入');
+          if (persist) {
+            saveLastPortrait(file).catch((error) => {
+              console.warn('Local portrait persistence unavailable:', error);
+            });
+          }
+          requestRender();
+          analyzePortrait(image);
+        } catch (error) {
+          console.error(error);
+          setStatus('浏览器无法读取 HEIC；请先导出为 JPG、PNG 或 WebP');
+        }
+      }
+
+      function handleDrop(event) {
+        event.preventDefault();
+        dropTarget.classList.remove('is-over');
+        decodeFile(event.dataTransfer?.files?.[0]);
+      }
+
+      filePickers.forEach((picker) => {
+        picker.addEventListener('change', () => decodeFile(picker.files?.[0]));
+      });
+
+      ['dragenter', 'dragover'].forEach((type) => {
+        document.addEventListener(type, (event) => {
+          event.preventDefault();
+          dropTarget.classList.add('is-over');
+        });
+      });
+      document.addEventListener('dragleave', () => dropTarget.classList.remove('is-over'));
+      document.addEventListener('drop', handleDrop);
+
+      gridRange.addEventListener('input', () => {
+        state.gridSize = Number(gridRange.value);
+        gridValue.value = state.gridSize.toFixed(1);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      });
+
+      levelsSelect.addEventListener('change', () => {
+        state.paletteIndex = Number(levelsSelect.value);
+        glyphs = palettes[state.paletteIndex].glyphs;
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        levelLabel.textContent = `ASCII / ${glyphs.length} levels`;
+        requestRender();
+      });
+
+      colorSelect.addEventListener('change', () => {
+        state.colorModeIndex = Number(colorSelect.value);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      });
+
+      contrastRange.addEventListener('input', () => {
+        state.contrast = Number(contrastRange.value);
+        contrastValue.value = formatSigned(state.contrast);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      });
+
+      temperatureRange.addEventListener('input', () => {
+        state.temperature = Number(temperatureRange.value);
+        temperatureValue.value = formatSigned(state.temperature);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      });
+
+      tintRange.addEventListener('input', () => {
+        state.tint = Number(tintRange.value);
+        tintValue.value = formatSigned(state.tint);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        requestRender();
+      });
+
+      warpSelect.addEventListener('change', () => {
+        if (!warpRenderer) return;
+        state.warpIndex = Number(warpSelect.value);
+        requestRender();
+        scheduleAssetPresetSave();
+      });
+
+      motionSelect.addEventListener('change', () => {
+        if (!warpRenderer) return;
+        state.motionIndex = Number(motionSelect.value);
+        if (state.reducedMotion && motionModes[state.motionIndex].value > 0) {
+          state.motionOverride = true;
+        }
+        requestRender();
+        scheduleAssetPresetSave();
+      });
+
+      motionStrengthRange.addEventListener('input', () => {
+        state.motionStrength = Number(motionStrengthRange.value);
+        motionStrengthValue.value = String(state.motionStrength);
+        if (state.reducedMotion && state.motionStrength > 0) {
+          state.motionOverride = true;
+        }
+        requestRender();
+        scheduleAssetPresetSave();
+      });
+
+      backgroundSelect.addEventListener('change', () => {
+        state.backgroundModeIndex = Number(backgroundSelect.value);
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        const backgroundMode = backgroundModes[state.backgroundModeIndex];
+        if (backgroundMode.mode !== 'original' &&
+            state.image && !state.segmentation && !state.analyzing) {
+          analyzePortrait(state.image);
+        }
+        requestRender();
+      });
+
+      downloadButton.addEventListener('click', () => {
+        if (!state.image) return;
+        const link = document.createElement('a');
+        link.download = 'interactive-ascii-portrait.png';
+        const motionEnabled = (!state.reducedMotion || state.motionOverride) &&
+          motionModes[state.motionIndex].value > 0 && state.motionStrength > 0;
+        const outputCanvas = warpRenderer &&
+          (warpModes[state.warpIndex].strength > 0 || motionEnabled)
+          ? warpCanvas
+          : canvas;
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = outputCanvas.width;
+        exportCanvas.height = outputCanvas.height;
+        const exportCtx = exportCanvas.getContext('2d');
+        exportCtx.drawImage(outputCanvas, 0, 0);
+        exportCtx.drawImage(motionCanvas, 0, 0, exportCanvas.width, exportCanvas.height);
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+      });
+
+      freezeAssetButton.addEventListener('click', async () => {
+        const preset = createAssetPreset();
+        if (!preset) {
+          setStatus('请等待当前肖像渲染完成');
+          return;
+        }
+        try {
+          await saveAssetPreset(preset);
+          const blob = new Blob([JSON.stringify(preset)], { type: 'application/json' });
+          const link = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          link.download = 'portrait-preset.json';
+          link.href = url;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setStatus(`${preset.columns} × ${preset.rows} 字符资产已冻结`);
+        } catch (error) {
+          console.error(error);
+          setStatus('资产冻结失败，请重试');
+        }
+      });
+
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+      requestRender();
+
+      // If a portrait.jpg is placed beside this file, it becomes the default image.
+      const defaultImage = new Image();
+      defaultImage.onload = () => {
+        if (state.image) return;
+        state.image = defaultImage;
+        state.lastSampleKey = '';
+        state.staticReady = false;
+        intro.classList.add('is-hidden');
+        requestRender();
+        analyzePortrait(defaultImage);
+      };
+      defaultImage.onerror = () => {
+        if (!state.image) {
+          intro.classList.remove('is-hidden');
+          setStatus('请选择或拖入一张肖像');
+        }
+      };
+
+      async function loadEmbeddedAssetPreset() {
+        const requestedPresetUrl = embedParams?.get('preset');
+        if (requestedPresetUrl) {
+          try {
+            const response = await fetch(requestedPresetUrl, { cache: 'no-store' });
+            if (response.ok && applyAssetPreset(await response.json())) return true;
+          } catch (_) {
+            // A bundled preset remains available when file:// blocks fetch.
+          }
+        }
+
+        if (applyAssetPreset(window.__ASCII_PORTRAIT_PRESET__)) return true;
+
+        if (!requestedPresetUrl) {
+          try {
+            const response = await fetch('./portrait-preset.json', { cache: 'no-store' });
+            if (response.ok && applyAssetPreset(await response.json())) return true;
+          } catch (_) {
+            // Local file previews commonly block fetch; IndexedDB is the fallback.
+          }
+        }
+
+        try {
+          return applyAssetPreset(await loadStoredAssetPreset());
+        } catch (error) {
+          console.warn('No frozen asset preset could be restored:', error);
+          return false;
+        }
+      }
+
+      async function restoreInitialPortrait() {
+        setStatus('正在恢复上次照片…');
+        if (embedMode && await loadEmbeddedAssetPreset()) return;
+        const embeddedPortrait = embedParams?.get('portrait');
+        if (embeddedPortrait) {
+          defaultImage.src = embeddedPortrait;
+          return;
+        }
+        try {
+          const savedPortrait = await loadLastPortrait();
+          if (savedPortrait?.blob) {
+            await decodeFile(savedPortrait.blob, { persist: false });
+            if (state.image) {
+              setStatus('已恢复上次照片');
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('No saved portrait could be restored:', error);
+        }
+        defaultImage.src = './portrait.jpg';
+      }
+
+      restoreInitialPortrait();
+    })();
+  </script>
+</body>
+</html>

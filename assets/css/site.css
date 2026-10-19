@@ -1,0 +1,1597 @@
+/* ============================================================
+   Yuchen Lu · academic homepage
+   Pure white and typographic first, with a few details borrowed
+   from a camera and a darkroom: the portrait sits in the main site's
+   viewfinder, the photographs sit on strips of film cut to each
+   picture's shape, and opening one dims the room.
+   ============================================================ */
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('../fonts/newsreader-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('../fonts/newsreader-italic-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/caveat-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter-var-latin.woff2') format('woff2');
+}
+
+:root {
+  --paper: #ffffff;
+  --ink: #19191b;
+  --graphite: #56585d; /* secondary text, 7:1 on white */
+  --quiet: #75777c; /* dates and small print, 4.6:1 */
+  --rule: #e8e8e5;
+  --film: #141414;
+  --gate: #070707;
+  --edge-print: #d9a441; /* the amber of film edge numbers */
+  --rec: #c8321e; /* a camera's record light */
+  /* the main site's star gold, in the deeper shade it uses on light ground,
+     and the soft glow around it */
+  --star: hsl(36 85% 38%);
+  --star-glow: hsl(45 95% 60%);
+
+  --serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --hand: 'Caveat', 'Bradley Hand', 'Segoe Print', cursive;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  --glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.25, 1.4, 0.4, 1);
+
+  --measure: 56rem;
+  --wide: 78rem;
+  --gutter: 1.5rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+  line-height: 1.58;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #f4e7c6;
+  color: var(--ink);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #cfcfcb;
+  text-underline-offset: 0.24em;
+  transition:
+    text-decoration-color 180ms ease,
+    color 180ms ease;
+}
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: -3rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  z-index: 10;
+}
+.skip:focus {
+  top: 1rem;
+}
+
+/* ---------- column ---------- */
+
+main,
+.photography-head,
+.albums-head,
+.colophon {
+  max-width: calc(var(--measure) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+main {
+  padding-top: clamp(3rem, 9vh, 5.5rem);
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1.15rem;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+/* the rule after a heading marks where a section starts at a glance */
+h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 560;
+  line-height: 1.45;
+  letter-spacing: -0.004em;
+}
+
+section {
+  margin-top: 3.6rem;
+}
+
+/* compound words stay whole at a line end */
+.nobr {
+  white-space: nowrap;
+}
+
+/* credits: people and venues are set in the serif italic throughout */
+.with,
+.venue {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--graphite);
+}
+
+/* ---------- intro ---------- */
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.5rem;
+  gap: 3rem;
+  align-items: start;
+}
+
+.name {
+  margin: 0 0 1.15rem;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 5vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.028em;
+}
+
+.intro-text p:not(.status) {
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 1.3rem 0 0.9rem;
+  font-size: 0.9375rem;
+}
+
+/* centred on the first line, so it stays put if the line wraps */
+.rec {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: calc(0.79em - 3.5px);
+  border-radius: 50%;
+  background: var(--rec);
+  box-shadow: 0 0 0 3px rgb(200 50 30 / 0.12);
+  animation: rec 2.4s ease-in-out infinite;
+}
+
+@keyframes rec {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* contact and profiles as a row of icons; each one names itself on hover */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0 0 0 -0.55rem; /* the first glyph lines up with the text above */
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  color: var(--graphite);
+  text-decoration: none;
+  transition:
+    color 200ms ease,
+    background-color 200ms ease;
+}
+.links a:hover,
+.links a:focus-visible {
+  color: var(--ink);
+  background: #f1f1ef;
+}
+
+.links a svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.links a::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  z-index: 2;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -3px);
+  transition:
+    opacity 160ms ease,
+    transform 260ms var(--glide);
+}
+.links a:hover::after,
+.links a:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* the main site's icon, in its gold, with a note in the margin pointing at it */
+.home-item {
+  display: flex;
+  align-items: center;
+}
+
+.links a.home {
+  color: var(--star);
+}
+.links a.home svg {
+  filter: drop-shadow(0 0 3px hsl(45 95% 58% / 0.65));
+}
+.links a.home:hover,
+.links a.home:focus-visible {
+  color: var(--star);
+  background: hsl(45 90% 60% / 0.14);
+}
+
+.handnote {
+  display: flex;
+  align-items: center;
+  margin-left: 0.15rem;
+  color: var(--star);
+  pointer-events: none;
+}
+
+.hand-arrow {
+  flex: none;
+  width: 3.4rem;
+  height: auto;
+  margin-top: 0.35rem;
+  overflow: visible;
+}
+.hand-arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.hand-text {
+  max-width: 9.5rem;
+  margin: -0.55rem 0 0 0.3rem;
+  font-family: var(--hand);
+  font-size: 1.1875rem;
+  line-height: 1.05;
+  transform: rotate(-3deg);
+  transform-origin: left center;
+}
+
+/* drawn once, after the portrait has come into focus */
+.js .hand-line {
+  stroke-dashoffset: 1;
+  animation: hand-draw 1.1s cubic-bezier(0.45, 0.05, 0.3, 1) 1.5s forwards;
+}
+.js .hand-head {
+  stroke-dashoffset: 1;
+  animation: hand-draw 0.3s ease-out 2.5s forwards;
+}
+.js .hand-text {
+  opacity: 0;
+  animation: hand-ink 0.9s ease 1.3s forwards;
+}
+@keyframes hand-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes hand-ink {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- portrait: the main site's viewfinder ---------- */
+
+/* As on yuchenlu.me: a small lit screen held in gold viewfinder corners,
+   the picture drifting a little as if the phone were held in hand, and
+   film grain on top.
+   Here it also comes into focus once when the page opens. */
+.portrait {
+  position: relative;
+  width: 8.5rem;
+  margin: 0.5rem 0 0;
+  justify-self: end;
+}
+
+/* a soft gold light around the screen */
+.portrait-glow {
+  position: absolute;
+  inset: -1.75rem;
+  z-index: -1;
+  background: radial-gradient(closest-side, hsl(45 95% 60% / 0.2), hsl(45 95% 60% / 0.06) 60%, transparent);
+  pointer-events: none;
+}
+
+.portrait-lens {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #efefed;
+  box-shadow:
+    0 0 0 1px hsl(36 85% 38% / 0.16),
+    0 12px 30px -14px rgb(0 0 0 / 0.4);
+}
+
+/* handheld: the whole picture drifts and turns a
+   little; scaled up 8% so the drift never shows an edge */
+.portrait-plate {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.08);
+  animation: vf-handheld 9s ease-in-out infinite;
+}
+
+.portrait-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* film grain, overlaid so mid grey leaves the brightness alone */
+.grain {
+  position: absolute;
+  inset: -100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 96px 96px;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  animation: vf-grain 0.6s steps(1) infinite;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 22px rgb(0 0 0 / 0.3);
+  pointer-events: none;
+}
+
+/* four L-shaped gold corners, 7px outside the picture, sharing one glow */
+.viewfinder {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px hsl(45 95% 55% / 0.55));
+}
+.viewfinder i {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 0 solid hsl(38 85% 46% / 0.9);
+}
+.viewfinder i:nth-child(1) {
+  left: -7px;
+  top: -7px;
+  border-left-width: 1.5px;
+  border-top-width: 1.5px;
+  border-top-left-radius: 2px;
+}
+.viewfinder i:nth-child(2) {
+  right: -7px;
+  top: -7px;
+  border-right-width: 1.5px;
+  border-top-width: 1.5px;
+  border-top-right-radius: 2px;
+}
+.viewfinder i:nth-child(3) {
+  left: -7px;
+  bottom: -7px;
+  border-left-width: 1.5px;
+  border-bottom-width: 1.5px;
+  border-bottom-left-radius: 2px;
+}
+.viewfinder i:nth-child(4) {
+  right: -7px;
+  bottom: -7px;
+  border-right-width: 1.5px;
+  border-bottom-width: 1.5px;
+  border-bottom-right-radius: 2px;
+}
+
+@keyframes vf-handheld {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.08);
+  }
+  25% {
+    transform: translate3d(3px, -2px, 0) rotate(0.7deg) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-1px, 3px, 0) rotate(-0.5deg) scale(1.08);
+  }
+  75% {
+    transform: translate3d(-3px, -1px, 0) rotate(0.3deg) scale(1.08);
+  }
+}
+
+@keyframes vf-grain {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  10% {
+    transform: translate3d(-5%, -10%, 0);
+  }
+  20% {
+    transform: translate3d(-15%, 5%, 0);
+  }
+  30% {
+    transform: translate3d(7%, -25%, 0);
+  }
+  40% {
+    transform: translate3d(-5%, 25%, 0);
+  }
+  50% {
+    transform: translate3d(-15%, 10%, 0);
+  }
+  60% {
+    transform: translate3d(15%, 0, 0);
+  }
+  70% {
+    transform: translate3d(0, 15%, 0);
+  }
+  80% {
+    transform: translate3d(3%, 28%, 0);
+  }
+  90% {
+    transform: translate3d(-10%, 10%, 0);
+  }
+}
+
+/* coming into focus once the photo has loaded: the picture sharpens and
+   the corners close in */
+.js .portrait:not(.is-locked) .portrait-plate img {
+  opacity: 0.35;
+  filter: blur(10px) saturate(0.5) brightness(1.12);
+  transform: scale(1.06);
+}
+.js .portrait:not(.is-locked) .viewfinder {
+  opacity: 0;
+  transform: scale(1.18);
+}
+
+.portrait.is-locked .portrait-plate img {
+  transition:
+    opacity 600ms ease,
+    filter 1150ms var(--glide) 200ms,
+    transform 1400ms var(--glide) 100ms;
+}
+.portrait.is-locked .viewfinder {
+  transition:
+    opacity 260ms ease,
+    transform 900ms var(--spring);
+}
+
+/* ---------- research interests: two abilities ---------- */
+
+.interests-lede {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* the full column, like everything else below the intro */
+.abilities {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.abilities > li + li {
+  margin-top: 0.7rem;
+}
+
+.abilities p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.abilities b {
+  font-weight: 600;
+}
+
+.interests-close {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* a thought added under an ability */
+.abilities .insight {
+  margin-top: 0.4rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.9375rem;
+  color: var(--graphite);
+}
+
+/* ---------- research: the paper as a card ---------- */
+
+.paper-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--paper);
+  transition:
+    border-color 400ms ease,
+    box-shadow 700ms var(--glide);
+}
+.paper-card:hover {
+  border-color: #dadad6;
+  box-shadow: 0 24px 46px -32px rgb(25 25 27 / 0.3);
+}
+
+/* the overview figure, matted on a light grey plate; multiply lets the
+   figure's white ground take the plate's tone */
+.paper-plate {
+  display: grid;
+  place-items: center;
+  padding: 1.25rem 1rem;
+  background: #f4f4f2;
+  border-right: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+.paper-plate img {
+  width: 100%;
+  mix-blend-mode: multiply;
+  transition: transform 1.6s var(--glide);
+}
+@media (hover: hover) {
+  .paper-card:hover .paper-plate img {
+    transform: scale(1.05);
+    transition: transform 7s cubic-bezier(0.16, 0.5, 0.3, 1);
+  }
+}
+
+.paper-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 1.35rem 1.5rem 1.4rem;
+}
+
+.paper-card h3 {
+  margin: 0 0 0.45rem;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.1875rem;
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+  text-wrap: balance;
+}
+
+.paper-card h3 a {
+  text-decoration-color: transparent;
+}
+.paper-card h3 a:hover {
+  text-decoration-color: currentColor;
+}
+
+.paper-card .summary {
+  margin-top: 0.6rem;
+}
+
+.paper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: auto 0 0;
+  padding-top: 1.05rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.36rem 0.75rem 0.36rem 0.85rem;
+  border: 1px solid #dadad6;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
+}
+.chip:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.chip svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- projects: a picture, then the words ---------- */
+
+.paper {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr);
+  gap: 1.85rem;
+  align-items: start;
+}
+
+.paper-figure {
+  display: block;
+  margin-top: 0.3rem;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.paper-figure img {
+  width: 100%;
+  transition: transform 1.6s var(--glide);
+}
+@media (hover: hover) {
+  .paper:hover .paper-figure img {
+    transform: scale(1.06);
+    transition: transform 7s cubic-bezier(0.16, 0.5, 0.3, 1);
+  }
+}
+
+/* amber, like a frame still in the developer */
+.paper-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--graphite);
+}
+.paper-status::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--edge-print);
+}
+
+.paper h3 {
+  margin: 0 0 0.4rem;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.28;
+  letter-spacing: -0.008em;
+  text-wrap: balance;
+}
+
+.paper h3 a {
+  text-decoration-color: transparent;
+}
+.paper h3 a:hover {
+  text-decoration-color: currentColor;
+}
+
+.authors,
+.summary {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--graphite);
+}
+
+.authors strong {
+  color: var(--ink);
+  font-weight: 560;
+}
+
+.summary {
+  text-wrap: pretty;
+}
+
+/* the headline numbers, so a skim still finds them */
+.fig {
+  color: var(--ink);
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+}
+
+.tags {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--quiet);
+}
+
+/* links under a paper or project */
+.paper-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.15rem;
+  margin: 0.5rem 0 0.7rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* the project plays on a small dark screen; site.js mounts the live
+   portrait once it comes near the viewport */
+.project-preview {
+  aspect-ratio: 729 / 705;
+  margin-top: 0.3rem;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #000;
+}
+
+.project-preview ascii-portrait {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* ---------- experience and education: two timelines, side by side ---------- */
+
+.tracks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 3.25rem;
+  margin-top: 3.6rem;
+}
+.tracks > section {
+  margin-top: 0;
+}
+
+.track {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  column-gap: 0.95rem;
+  align-items: start;
+  padding-bottom: 1.15rem;
+}
+
+/* the thread from one mark to the next */
+.track > li::before {
+  content: '';
+  position: absolute;
+  left: calc(1.25rem - 0.5px);
+  top: 2.85rem;
+  bottom: 0.3rem;
+  width: 1px;
+  background: var(--rule);
+}
+.track > li:last-child {
+  padding-bottom: 0;
+}
+.track > li:last-child::before {
+  display: none;
+}
+
+/* the school's mark in a small round frame; seals fill it */
+.mark {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--paper);
+  overflow: hidden;
+}
+.mark img {
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+}
+.mark-fill {
+  border: 0;
+}
+.mark-fill img {
+  width: 100%;
+  height: 100%;
+}
+.track-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding-top: 0.1rem;
+}
+.track-name {
+  font-weight: 560;
+  letter-spacing: -0.004em;
+}
+
+.when {
+  flex: none;
+  color: var(--quiet);
+  font-size: 0.8125rem;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.track .with,
+.track .degree,
+.track .topic {
+  margin: 0.05rem 0 0;
+  text-wrap: pretty;
+}
+.track .with {
+  font-size: 1rem;
+}
+.track .degree,
+.track .topic {
+  color: var(--graphite);
+}
+
+/* ---------- photography: a contact sheet ---------- */
+
+.photography {
+  margin-top: 5rem;
+}
+
+.photography-head h2 {
+  margin-bottom: 0.7rem;
+}
+
+.photography-head p {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--graphite);
+}
+
+/* strips of film, each frame cut to its photograph's own proportions.
+   Without script this is a plain justified wrap; site.js then splits the
+   frames into strips of even height that all run the full width, and
+   lines the perforations up so each strip reads as one piece of film. */
+.contact-sheet {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 1.6rem;
+  max-width: calc(var(--wide) + 2 * var(--gutter));
+  margin: 2.5rem auto 0;
+  padding: 0 var(--gutter);
+  list-style: none;
+}
+
+.frame {
+  --ar: 3 / 2;
+  --pitch: 1.5rem; /* perforation spacing along the strip */
+  position: relative;
+  flex: calc(var(--ar)) 1 calc(var(--ar) * 9rem + 0.6rem);
+  min-width: 0;
+  padding: 1.2rem 0.3rem 1.45rem;
+  background: var(--film);
+}
+
+.frame::before,
+.frame::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 7px;
+  /* a perforation is a rounded rectangle a little wider than tall */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 7' preserveAspectRatio='xMidYMid meet'%3E%3Crect width='10' height='7' rx='1.7' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-size: var(--pitch) 7px;
+  background-position-x: var(--perf-x, 0px);
+  background-repeat: repeat-x;
+}
+.frame::before {
+  top: 0.38rem;
+}
+.frame::after {
+  bottom: 0.38rem;
+}
+
+.frame-window {
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--ar);
+  padding: 0;
+  border: 0;
+  background: var(--gate);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.frame-window img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: none;
+  transition:
+    transform 1.6s var(--glide),
+    filter 600ms ease;
+}
+
+/* held under the cursor, the picture drifts in slowly, each frame
+   its own way (site.js sets --dx / --dy) */
+@media (hover: hover) {
+  .frame-window:hover img {
+    transform: scale(1.08) translate3d(var(--dx, 0%), var(--dy, 0%), 0);
+    filter: brightness(1.06);
+    transition:
+      transform 9s cubic-bezier(0.16, 0.5, 0.3, 1),
+      filter 600ms ease;
+  }
+}
+
+.frame-window:focus-visible {
+  outline: 2px solid var(--edge-print);
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
+.edge {
+  position: absolute;
+  left: 0.55rem;
+  bottom: 0.82rem;
+  color: var(--edge-print);
+  font-size: 0.56rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.edge::before {
+  content: '\25B8';
+  margin-right: 0.25em;
+}
+
+/* ---------- albums: the main site's crate of records ---------- */
+
+/* Same staging as on yuchenlu.me: the sleeves stand in a stack, each over
+   the next; under the cursor one is drawn down out of the stack, the
+   record slides out of the sleeve and starts to turn, and the cover
+   throws a soft reflection on the shelf. */
+.albums {
+  margin-top: 5rem;
+}
+
+.albums-head h2 {
+  margin: 0;
+}
+
+.crate {
+  position: relative;
+  display: flex;
+  max-width: calc(var(--wide) + 2 * var(--gutter));
+  margin: 2.75rem auto 0;
+  /* room below for a record drawn down out of the stack */
+  padding: 0 var(--gutter) 9rem;
+  list-style: none;
+}
+
+/* each sleeve steps 60% of its width from the last; the width is solved
+   so the last record, slid out, still ends inside the row */
+.lp {
+  --n: 8;
+  --w: calc(96% / (1.564 + 0.6 * (var(--n) - 1)));
+  position: relative;
+  z-index: var(--z);
+  flex: none;
+  width: var(--w);
+  margin-left: calc(var(--w) * -0.4);
+}
+.lp:first-child {
+  margin-left: 0;
+}
+
+.lp-pull {
+  transition: transform 600ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.lp-body {
+  position: relative;
+}
+
+.lp-disc {
+  position: absolute;
+  top: 3%;
+  bottom: 3%;
+  right: 0;
+  aspect-ratio: 1;
+  pointer-events: none;
+  transition: transform 700ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* the turning part: grooves, label and spindle hole */
+.lp-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.085) 0 1px, transparent 1px 14px),
+    repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 50% 50%, #121212 0%, #121212 56%, #080808 93%, #080808 100%);
+  animation: vinyl-spin 7s linear infinite paused;
+}
+
+.lp-label-ground,
+.lp-label,
+.lp-hole {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.lp-label-ground {
+  width: 47%;
+  height: 47%;
+  background: #1a1a1a;
+}
+.lp-label {
+  width: 40%;
+  height: 40%;
+  object-fit: cover;
+}
+.lp-hole {
+  width: 3.6%;
+  height: 3.6%;
+  background: var(--paper);
+}
+
+/* the highlight comes from the room, so it stays put while the record turns */
+.lp-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgb(255 255 255 / 0.11) 44%,
+    rgb(255 255 255 / 0.02) 51%,
+    transparent 58%
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.09);
+}
+
+@keyframes vinyl-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* the cover's reflection on the shelf: blurred, fading downward */
+.lp-reflect {
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  top: 100%;
+  height: 52%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.9) 0%, rgb(0 0 0 / 0.62) 22%, rgb(0 0 0 / 0.34) 44%, rgb(0 0 0 / 0.15) 64%, rgb(0 0 0 / 0.05) 80%, transparent 96%);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.9) 0%, rgb(0 0 0 / 0.62) 22%, rgb(0 0 0 / 0.34) 44%, rgb(0 0 0 / 0.15) 64%, rgb(0 0 0 / 0.05) 80%, transparent 96%);
+}
+.lp-reflect img {
+  position: absolute;
+  left: 16px;
+  top: 0;
+  width: calc(100% - 32px);
+  transform: scaleY(-1);
+  opacity: 0.27;
+  filter: blur(6px);
+}
+
+/* the sleeve; its shadow falls on the one behind, so each reads as its own */
+.lp-sleeve {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 12px 0 24px -8px rgb(0 0 0 / 0.42);
+}
+.lp-sleeve img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lp-caption {
+  margin: 5.5rem 0 0;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.lp-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+.lp-meta {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--star);
+}
+
+@media (hover: hover) and (min-width: 641px) {
+  .lp:hover .lp-pull {
+    transform: translateY(40%);
+  }
+  .lp:hover .lp-disc {
+    transform: translateX(60%);
+  }
+  .lp:hover .lp-spin {
+    animation-play-state: running;
+  }
+  .lp:hover .lp-reflect,
+  .lp:hover .lp-caption {
+    opacity: 1;
+  }
+}
+
+/* where you are on the phone's shelf */
+.crate-count {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding: 0 var(--gutter);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  color: var(--quiet);
+  font-variant-numeric: tabular-nums;
+}
+.crate-index b {
+  font-weight: 500;
+  color: var(--star);
+}
+.crate-track {
+  position: relative;
+  width: 6rem;
+  height: 1px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.12);
+}
+.crate-track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(100% / 8);
+  background: var(--star);
+  transition: transform 500ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* ---------- footer ---------- */
+
+.colophon {
+  margin-top: 3.5rem;
+  padding-bottom: 3.5rem;
+  color: var(--quiet);
+  font-size: 0.875rem;
+}
+
+.colophon p {
+  margin: 0 0 0.3rem;
+}
+
+.glow-link {
+  color: var(--star);
+  text-decoration: none;
+  text-shadow: 0 0 12px hsl(45 95% 60% / 0.5);
+}
+.glow-link:hover {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+/* ---------- the screening room ---------- */
+
+.screening {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: #060606;
+  touch-action: none;
+}
+
+.screening[hidden] {
+  display: none;
+}
+
+/* faint film grain on the dark, so the room reads as projected light */
+.screening::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.screening-frame {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.screening-frame img {
+  width: auto;
+  height: auto;
+  max-width: min(90vw, 1400px);
+  max-height: 80vh;
+  max-height: 80svh;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.6);
+  will-change: transform, opacity;
+}
+
+.screening-count {
+  margin-top: 1.1rem;
+  color: var(--edge-print);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+}
+
+.screening button {
+  position: absolute;
+  border: 0;
+  background: none;
+  color: #e9e9e6;
+  cursor: pointer;
+  font: inherit;
+}
+
+.screening-close {
+  top: 1.1rem;
+  right: 1.25rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.screening-close:hover {
+  opacity: 1;
+}
+
+.screening-nav {
+  top: 50%;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-top: -1.625rem;
+  display: grid;
+  place-items: center;
+  opacity: 0.7;
+}
+.screening-nav:hover {
+  opacity: 1;
+}
+.screening-nav svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.screening-prev {
+  left: 0.75rem;
+}
+.screening-next {
+  right: 0.75rem;
+}
+
+.screening :focus-visible {
+  outline-color: var(--edge-print);
+}
+
+/* ---------- smaller screens ---------- */
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 1.25rem;
+  }
+
+  main {
+    padding-top: 3.25rem;
+  }
+
+  .intro {
+    grid-template-columns: 1fr;
+    gap: 2.4rem;
+  }
+
+  .portrait {
+    order: -1;
+    width: 6.5rem;
+    margin: 0.5rem 0 0 7px;
+    justify-self: start;
+  }
+
+  .links {
+    gap: 0.3rem 1.1rem;
+  }
+
+  section {
+    margin-top: 3.25rem;
+  }
+
+  .paper {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .paper-card {
+    grid-template-columns: 1fr;
+  }
+
+  .paper-plate {
+    padding: 1.1rem 1.25rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .paper-card-body {
+    padding: 1.15rem 1.2rem 1.25rem;
+  }
+
+  .project-preview {
+    width: min(100%, 15rem);
+  }
+
+
+  /* the date drops under the name rather than squeezing it */
+  .track-head {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tracks {
+    grid-template-columns: 1fr;
+    row-gap: 3.25rem;
+    margin-top: 3.25rem;
+  }
+
+  /* on a phone the crate becomes a shelf you swipe along: the record in
+     position is drawn out and turns, its neighbours wait beside it */
+  .crate {
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding: 0.5rem 0 0.5rem var(--gutter);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: var(--gutter);
+    scrollbar-width: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .crate::-webkit-scrollbar {
+    display: none;
+  }
+  /* lets the last record come to rest at the left margin too */
+  .crate::after {
+    content: '';
+    flex: none;
+    width: calc(20vw - var(--gutter) - 0.75rem);
+  }
+  .lp {
+    z-index: auto;
+    width: 80vw;
+    margin-left: 0;
+    scroll-snap-align: start;
+  }
+  .lp-body {
+    width: 64%;
+  }
+  .lp-reflect {
+    display: none;
+  }
+  .lp-sleeve {
+    box-shadow: 12px 0 24px -8px rgb(0 0 0 / 0.3);
+  }
+  .lp-caption {
+    margin-top: 1.1rem;
+    padding-right: 0.75rem;
+    opacity: 0.3;
+    transition: opacity 500ms cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  .lp-title {
+    font-size: 1.1875rem;
+  }
+  .lp.is-lit .lp-disc {
+    transform: translateX(55%);
+  }
+  .lp.is-lit .lp-spin {
+    animation-play-state: running;
+  }
+  .lp.is-lit .lp-caption {
+    opacity: 1;
+  }
+  .crate-count {
+    display: flex;
+  }
+
+  .albums {
+    margin-top: 5rem;
+  }
+
+  .screening-nav {
+    top: auto;
+    bottom: 1rem;
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec,
+  .portrait-plate,
+  .grain {
+    animation: none;
+  }
+  .js .portrait .portrait-plate img,
+  .js .portrait .viewfinder {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+  a,
+  .links a,
+  .links a::after,
+  .frame-window img,
+  .paper-figure img,
+  .paper-plate img,
+  .lp-pull,
+  .lp-disc,
+  .lp-reflect,
+  .lp-caption,
+  .crate-track span {
+    transition: none;
+  }
+  .lp-spin,
+  .js .hand-line,
+  .js .hand-head,
+  .js .hand-text {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  .lp:hover .lp-pull,
+  .lp:hover .lp-disc {
+    transform: none;
+  }
+  .frame-window:hover img {
+    transform: none;
+  }
+}
