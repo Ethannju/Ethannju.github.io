@@ -720,6 +720,16 @@ section {
   border-color: var(--ink);
   color: var(--paper);
 }
+/* live Hugging Face upvotes, shown once the count arrives */
+.chip .upvotes {
+  margin-left: 0.15rem;
+  color: var(--star);
+  font-variant-numeric: tabular-nums;
+  transition: color 220ms ease;
+}
+.chip:hover .upvotes {
+  color: var(--star-glow);
+}
 .chip svg {
   width: 0.7rem;
   height: 0.7rem;

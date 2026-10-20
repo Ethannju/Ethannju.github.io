@@ -14,6 +14,23 @@
   }
 })()
 
+// The CarryOn card's Hugging Face chip shows the paper's live upvote count.
+// If the request fails the chip stays as a plain link.
+
+;(() => {
+  const n = document.querySelector('[data-hf-upvotes]')
+  if (!n) return
+  fetch('https://huggingface.co/api/papers/2610.18784')
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((d) => {
+      if (typeof d.upvotes !== 'number') return
+      n.textContent = d.upvotes
+      n.parentElement.title = `${d.upvotes} upvotes on Hugging Face`
+      n.parentElement.hidden = false
+    })
+    .catch(() => {})
+})()
+
 // Contact sheet: every frame is cut to its photograph's proportions. The
 // frames are split, in order, into strips of even height that each run the
 // full width, and the perforations are lined up along each strip so it reads
