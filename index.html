@@ -30,6 +30,7 @@
       document.documentElement.classList.add('js')
     </script>
     <script src="assets/js/site.js" defer></script>
+    <script src="assets/js/visitors.js" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -498,6 +499,15 @@
       <div class="crate-count" aria-hidden="true">
         <span class="crate-index"><b>01</b> / 08</span><span class="crate-track"><span></span></span>
       </div>
+    </section>
+
+    <!-- Shown once the visitor counts arrive (assets/js/visitors.js) -->
+    <section class="visitors" aria-labelledby="visitors" hidden>
+      <h2 id="visitors">Visitors</h2>
+      <figure class="visitor-map">
+        <canvas aria-hidden="true"></canvas>
+        <figcaption><b data-visits></b> from <b data-countries></b> since October 2026</figcaption>
+      </figure>
     </section>
 
     <footer class="colophon">

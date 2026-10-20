@@ -1,0 +1,12 @@
+{
+  // Visitor counter for https://ethannju.github.io (the map at the bottom of the page)
+  "name": "site-stats",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  // on yuchenlu.me rather than workers.dev, which is blocked in mainland China
+  "routes": [{ "pattern": "stats.yuchenlu.me", "custom_domain": true }],
+  "workers_dev": false,
+  "d1_databases": [
+    { "binding": "DB", "database_name": "site-stats", "database_id": "7f28239c-8b9e-4240-b802-4787da2db8ef" }
+  ]
+}
