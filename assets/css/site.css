@@ -135,7 +135,6 @@ a:hover {
 main,
 .photography-head,
 .albums-head,
-.visitors,
 .colophon {
   max-width: calc(var(--measure) + 2 * var(--gutter));
   margin-inline: auto;
@@ -1300,34 +1299,6 @@ section {
 }
 
 /* ---------- footer ---------- */
-
-/* ---------- visitors: a dotted world map ---------- */
-
-.visitors {
-  margin-top: 1rem;
-}
-
-.visitor-map {
-  margin: 1.5rem 0 0;
-}
-
-.visitor-map canvas {
-  display: block;
-  width: 100%;
-  aspect-ratio: 180 / 68;
-}
-
-.visitor-map figcaption {
-  margin-top: 1rem;
-  color: var(--quiet);
-  font-size: 0.875rem;
-}
-
-.visitor-map b {
-  color: var(--ink);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .colophon {
   margin-top: 3.5rem;
