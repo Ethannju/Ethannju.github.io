@@ -34,6 +34,20 @@
   font-display: swap;
   src: url('../fonts/inter-var-latin.woff2') format('woff2');
 }
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/source-sans-pro-latin-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/source-sans-pro-latin-600.woff2') format('woff2');
+}
 
 :root {
   --paper: #ffffff;
@@ -720,16 +734,6 @@ section {
   border-color: var(--ink);
   color: var(--paper);
 }
-/* live Hugging Face upvotes, shown once the count arrives */
-.chip .upvotes {
-  margin-left: 0.15rem;
-  color: var(--star);
-  font-variant-numeric: tabular-nums;
-  transition: color 220ms ease;
-}
-.chip:hover .upvotes {
-  color: var(--star-glow);
-}
 .chip svg {
   width: 0.7rem;
   height: 0.7rem;
@@ -738,6 +742,52 @@ section {
   stroke-width: 1.4;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Hugging Face's "Paper of the day" badge and upvoted button, in their font
+   and colours, evened out to one height and weight as a pair. The live count
+   arrives from site.js, and without one the button stays hidden */
+.hf-tag {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Source Sans Pro', var(--sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.hf-rank,
+.hf-upvoted {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.36rem 0.75em;
+  border: 1px solid;
+  border-radius: 0.5em;
+  line-height: 1.1;
+}
+.hf-rank {
+  border-color: #bedbff;
+  background: rgb(21 93 252 / 0.1);
+  color: #2b7fff;
+}
+.hf-upvoted {
+  gap: 0.5em;
+  border-color: #ffd6a7;
+  background: #ffedd4;
+  color: #f54a00;
+}
+.hf-upvoted[hidden] {
+  display: none;
+}
+.hf-upvoted svg {
+  width: 0.75em;
+  height: 0.75em;
+  fill: #ff6900;
+}
+.hf-upvoted b {
+  color: #ff6900;
+  font-weight: inherit;
 }
 
 /* ---------- projects: a picture, then the words ---------- */
